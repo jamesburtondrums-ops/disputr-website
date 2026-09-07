@@ -1,3 +1,50 @@
 <!doctype html>
 <html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pricing | Disputr</title><link rel="stylesheet" href="assets/styles.css"></head>
 <body><header class="site-header"><div class="wrap header-row"><a class="brand" href="index.html">Disputr</a><a href="login.html">Sign in</a></div></header><main class="wrap" style="padding:48px 16px;max-width:760px"><section class="hero-panel"><span class="eyebrow">Disputr Premium</span><h1>14 days free, then £5 per month.</h1><p>Premium includes full editable complaint templates, AI drafting, evidence checklists and practical complaint timelines.</p><div class="card"><h2>What you will pay</h2><p><strong>Today:</strong> £0.00</p><p><strong>Free trial:</strong> 14 days</p><p><strong>Then:</strong> £5.00 each month unless you cancel before the trial ends.</p><p>Renews monthly. Cancel online at any time in My account. You will see the trial end date and first payment date in Stripe Checkout before you confirm.</p><button class="btn" data-start-trial>Start 14-day free trial</button><p data-billing-message role="status"></p></div><p><a href="terms.html">Read the terms</a> · <a href="privacy.html">Read the privacy policy</a></p></section></main><script src="assets/billing.js"></script></body></html>
+<button id="start-premium-checkout" type="button">
+  Start Premium
+</button>
+
+<script>
+  document
+    .getElementById("start-premium-checkout")
+    .addEventListener("click", async () => {
+      const button = document.getElementById(
+        "start-premium-checkout"
+      );
+
+      button.disabled = true;
+
+      try {
+        const response = await fetch(
+          "/api/create-checkout-session",
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({}),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.error || "Unable to start checkout."
+          );
+        }
+
+        window.location.assign(result.checkoutUrl);
+      } catch (error) {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "Unable to start checkout."
+        );
+
+        button.disabled = false;
+      }
+    });
+</script>
