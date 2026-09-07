@@ -171,16 +171,12 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (
-      request.method === "POST" &&
-      url.pathname === "/api/billing/create-checkout-session"
-    ) {
-      return await createCheckoutSession(request, env);
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: CORS_HEADERS
+      });
     }
-
-    return env.ASSETS.fetch(request);
-  },
-};
 
     if (url.pathname === "/api/health") {
       return json({
