@@ -6,7 +6,7 @@
   async function startTrial() {
     if (message) message.textContent = 'Preparing secure checkout…';
     try {
-      const response = await fetch('/api/billing/create-checkout-session', {
+      const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         credentials: 'same-origin'
       });
