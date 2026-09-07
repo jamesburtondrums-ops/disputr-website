@@ -18,7 +18,7 @@ export default {
 
     if (
       request.method === "POST" &&
-      url.pathname === "/api/create-checkout-session"
+      url.pathname === "/api/billing/create-checkout-session"
     ) {
       return createCheckoutSession(request, env);
     }
