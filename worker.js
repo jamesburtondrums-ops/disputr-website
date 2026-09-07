@@ -893,4 +893,4 @@ function json(body, status = 200, extraHeaders = {}) {
       ...JSON_HEADERS,
       ...extraHeaders,
     },
-})();
+})(
