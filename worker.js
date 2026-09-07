@@ -371,7 +371,7 @@ async function createCheckoutSession(request, env) {
 
  return json({
   checkoutUrl: stripeResult.url,
-);
+
 }
 
 /* -------------------------------------------------------------------------- */
