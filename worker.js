@@ -886,11 +886,9 @@ function nowSeconds() {
   return Math.floor(Date.now() / 1000);
 }
 
-function json(body, status = 200, extraHeaders = {}) {
+function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      ...JSON_HEADERS,
-      ...extraHeaders,
-    },
-})(
+    headers: JSON_HEADERS,
+  });
+}
