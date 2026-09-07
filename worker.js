@@ -170,6 +170,13 @@ function buildSuggestedAttachments(data) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    
+    if (
+      request.method === "POST" &&
+      url.pathname === "/api/billing/create-checkout-session"
+    ) {
+      return await createCheckoutSession(request, env);
+    }
 
     if (request.method === "OPTIONS") {
       return new Response(null, {
