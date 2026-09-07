@@ -1,0 +1,87 @@
+id,category,name,aliases,popularity_rank,complaint_email,complaint_url,contact_method,verification_status,last_checked,source_url
+barclays,finance,Barclays,"barclays bank",1,,https://www.barclays.co.uk/help/complaints/,Official complaints route,official-route-only,,https://www.barclays.co.uk/help/complaints/
+lloyds-bank,finance,Lloyds Bank,"lloyds",2,,https://www.lloydsbank.com/help-guidance/complaints.html,Official complaints route,official-route-only,,https://www.lloydsbank.com/help-guidance/complaints.html
+natwest,finance,NatWest,"nat west rbs royal bank of scotland",3,,https://www.natwest.com/support-centre/how-to-complain.html,Official complaints route,official-route-only,,https://www.natwest.com/support-centre/how-to-complain.html
+hsbc,finance,HSBC,"hsbc uk",4,,https://www.hsbc.co.uk/help/complaints/,Official complaints route,official-route-only,,https://www.hsbc.co.uk/help/complaints/
+nationwide,finance,Nationwide,"nationwide building society",5,,https://www.nationwide.co.uk/help/complaints/,Official complaints route,official-route-only,,https://www.nationwide.co.uk/help/complaints/
+santander,finance,Santander,"santander uk",6,,https://www.santander.co.uk/personal/support/customer-support/complaints,Official complaints route,official-route-only,,https://www.santander.co.uk/personal/support/customer-support/complaints
+halifax,finance,Halifax,"halifax bank",7,,https://www.halifax.co.uk/helpcentre/complaints.html,Official complaints route,official-route-only,,https://www.halifax.co.uk/helpcentre/complaints.html
+monzo,finance,Monzo,"monzo bank",8,,https://monzo.com/help/complaints,Official complaints route,official-route-only,,https://monzo.com/help/complaints
+starling,finance,Starling Bank,"starling",9,,https://www.starlingbank.com/help/complaints/,Official complaints route,official-route-only,,https://www.starlingbank.com/help/complaints/
+revolut,finance,Revolut,"revolut uk",10,,https://help.revolut.com/help/profile-and-plan/profile-plan/complaints/,Official complaints route,official-route-only,,https://help.revolut.com/help/profile-and-plan/profile-plan/complaints/
+amex,finance,American Express,"amex",11,,https://www.americanexpress.com/uk/customer-service/faq.complaints.html,Official complaints route,official-route-only,,https://www.americanexpress.com/uk/customer-service/faq.complaints.html
+paypal,finance,PayPal,"paypal uk",12,,https://www.paypal.com/uk/cshelp/article/how-do-i-make-a-complaint-help201,Official complaints route,official-route-only,,https://www.paypal.com/uk/cshelp/article/how-do-i-make-a-complaint-help201
+klarna,finance,Klarna,"klarna uk",13,,https://www.klarna.com/uk/customer-service/how-do-i-make-a-complaint/,Official complaints route,official-route-only,,https://www.klarna.com/uk/customer-service/how-do-i-make-a-complaint/
+bet365,gambling,bet365,"bet 365",1,,https://help.bet365.com/,Official operator complaints route,official-route-only,,https://help.bet365.com/
+betfred,gambling,Betfred,"bet fred",2,,https://www.betfred.com/,Official operator complaints route,official-route-only,,https://www.betfred.com/
+william-hill,gambling,William Hill,"williamhill",3,,https://news.williamhill.com/,Official operator complaints route,official-route-only,,https://news.williamhill.com/
+ladbrokes,gambling,Ladbrokes,"ladbrokes entain",4,,https://help.ladbrokes.com/,Official operator complaints route,official-route-only,,https://help.ladbrokes.com/
+coral,gambling,Coral,"coral entain",5,,https://help.coral.co.uk/,Official operator complaints route,official-route-only,,https://help.coral.co.uk/
+sky-bet,gambling,Sky Bet,"skybet sky bet",6,,https://support.skybet.com/,Official operator complaints route,official-route-only,,https://support.skybet.com/
+paddy-power,gambling,Paddy Power,"paddypower",7,,https://www.paddypower.com/,Official operator complaints route,official-route-only,,https://www.paddypower.com/
+betfair,gambling,Betfair,"bet fair",8,,https://support.betfair.com/,Official operator complaints route,official-route-only,,https://support.betfair.com/
+pokerstars,gambling,PokerStars,"poker stars",9,,https://www.pokerstars.uk/,Official operator complaints route,official-route-only,,https://www.pokerstars.uk/
+888,gambling,888,"888casino 888sport",10,,https://www.888casino.com/,Official operator complaints route,official-route-only,,https://www.888casino.com/
+tombola,gambling,tombola,"tombola bingo",11,,https://www.tombola.co.uk/,Official operator complaints route,official-route-only,,https://www.tombola.co.uk/
+buzz-bingo,gambling,Buzz Bingo,"buzz bingo",12,,https://www.buzzbingo.com/,Official operator complaints route,official-route-only,,https://www.buzzbingo.com/
+british-airways,travel,British Airways,"ba british airways",1,,https://www.britishairways.com/en-gb/information/help-and-contacts,Official travel complaints route,official-route-only,,https://www.britishairways.com/en-gb/information/help-and-contacts
+easyjet,travel,easyJet,"easy jet",2,,https://www.easyjet.com/en/help,Official travel complaints route,official-route-only,,https://www.easyjet.com/en/help
+ryanair,travel,Ryanair,"ryan air",3,,https://help.ryanair.com/,Official travel complaints route,official-route-only,,https://help.ryanair.com/
+jet2,travel,Jet2,"jet2 holidays jet2holidays",4,,https://www.jet2.com/en/help,Official travel complaints route,official-route-only,,https://www.jet2.com/en/help
+tui,travel,TUI,"tui uk",5,,https://www.tui.co.uk/destinations/info/contact-us,Official travel complaints route,official-route-only,,https://www.tui.co.uk/destinations/info/contact-us
+virgin-atlantic,travel,Virgin Atlantic,"virgin",6,,https://help.virginatlantic.com/gb/en.html,Official travel complaints route,official-route-only,,https://help.virginatlantic.com/gb/en.html
+wizz-air,travel,Wizz Air,"wizzair wizz air",7,,https://wizzair.com/en-gb/information-and-services/contact/contact-us,Official travel complaints route,official-route-only,,https://wizzair.com/en-gb/information-and-services/contact/contact-us
+emirates,travel,Emirates,"emirates airline",8,,https://www.emirates.com/uk/english/help/,Official travel complaints route,official-route-only,,https://www.emirates.com/uk/english/help/
+qatar-airways,travel,Qatar Airways,"qatar",9,,https://www.qatarairways.com/en-gb/help.html,Official travel complaints route,official-route-only,,https://www.qatarairways.com/en-gb/help.html
+booking-com,travel,Booking.com,"booking com",10,,https://www.booking.com/content/contact-us.html,Official travel complaints route,official-route-only,,https://www.booking.com/content/contact-us.html
+expedia,travel,Expedia,"expedia uk",11,,https://www.expedia.co.uk/service/,Official travel complaints route,official-route-only,,https://www.expedia.co.uk/service/
+airbnb,travel,Airbnb,"air bnb",12,,https://www.airbnb.co.uk/help,Official travel complaints route,official-route-only,,https://www.airbnb.co.uk/help
+loveholidays,travel,loveholidays,"love holidays",13,,https://www.loveholidays.com/about-us/contact-us.html,Official travel complaints route,official-route-only,,https://www.loveholidays.com/about-us/contact-us.html
+octopus-energy,energy,Octopus Energy,"octopus",1,,https://octopus.energy/help-and-faqs/,Official energy complaints route,official-route-only,,https://octopus.energy/help-and-faqs/
+british-gas,energy,British Gas,"britishgas",2,,https://www.britishgas.co.uk/help-and-support/,Official energy complaints route,official-route-only,,https://www.britishgas.co.uk/help-and-support/
+edf-energy,energy,EDF Energy,"edf",3,,https://www.edfenergy.com/help-support/,Official energy complaints route,official-route-only,,https://www.edfenergy.com/help-support/
+eon-next,energy,E.ON Next,"eon e.on",4,,https://www.eonnext.com/help/,Official energy complaints route,official-route-only,,https://www.eonnext.com/help/
+ovo-energy,energy,OVO Energy,"ovo",5,,https://www.ovoenergy.com/help,Official energy complaints route,official-route-only,,https://www.ovoenergy.com/help
+scottish-power,energy,ScottishPower,"scottish power",6,,https://www.scottishpower.co.uk/help-centre/,Official energy complaints route,official-route-only,,https://www.scottishpower.co.uk/help-centre/
+utilita,energy,Utilita,"utilita energy",7,,https://www.utilita.co.uk/help,Official energy complaints route,official-route-only,,https://www.utilita.co.uk/help
+utility-warehouse,energy,Utility Warehouse,"uw utility warehouse",8,,https://www.utilitywarehouse.co.uk/help,Official energy complaints route,official-route-only,,https://www.utilitywarehouse.co.uk/help
+ecotricity,energy,Ecotricity,"eco tricity",9,,https://www.ecotricity.co.uk/help-and-support,Official energy complaints route,official-route-only,,https://www.ecotricity.co.uk/help-and-support
+good-energy,energy,Good Energy,"good energy",10,,https://www.goodenergy.co.uk/help-and-support/,Official energy complaints route,official-route-only,,https://www.goodenergy.co.uk/help-and-support/
+so-energy,energy,So Energy,"soenergy so energy",11,,https://help.so.energy/,Official energy complaints route,official-route-only,,https://help.so.energy/
+thames-water,water,Thames Water,"thameswater",1,,https://www.thameswater.co.uk/help-and-advice/,Official water complaints route,official-route-only,,https://www.thameswater.co.uk/help-and-advice/
+severn-trent,water,Severn Trent,"severn trent water",2,,https://www.stwater.co.uk/help-and-contact/,Official water complaints route,official-route-only,,https://www.stwater.co.uk/help-and-contact/
+united-utilities,water,United Utilities,"united utilities water",3,,https://www.unitedutilities.com/help-and-support/,Official water complaints route,official-route-only,,https://www.unitedutilities.com/help-and-support/
+yorkshire-water,water,Yorkshire Water,"yorkshirewater",4,,https://www.yorkshirewater.com/help-and-advice/,Official water complaints route,official-route-only,,https://www.yorkshirewater.com/help-and-advice/
+anglian-water,water,Anglian Water,"anglian",5,,https://www.anglianwater.co.uk/help-and-advice/,Official water complaints route,official-route-only,,https://www.anglianwater.co.uk/help-and-advice/
+southern-water,water,Southern Water,"southernwater",6,,https://www.southernwater.co.uk/help-and-support,Official water complaints route,official-route-only,,https://www.southernwater.co.uk/help-and-support
+welsh-water,water,Dŵr Cymru Welsh Water,"welsh water dwr cymru",7,,https://www.dwrcymru.com/en/help-advice,Official water complaints route,official-route-only,,https://www.dwrcymru.com/en/help-advice
+bt,telecoms,BT,"bt broadband",1,,https://www.bt.com/help/,Official telecoms complaints route,official-route-only,,https://www.bt.com/help/
+ee,telecoms,EE,"ee mobile ee broadband",2,,https://ee.co.uk/help/,Official telecoms complaints route,official-route-only,,https://ee.co.uk/help/
+sky,telecoms,Sky,"sky broadband sky mobile",3,,https://www.sky.com/help/,Official telecoms complaints route,official-route-only,,https://www.sky.com/help/
+virgin-media-o2,telecoms,Virgin Media O2,"virgin media virgin o2",4,,https://www.virginmedia.com/help,Official telecoms complaints route,official-route-only,,https://www.virginmedia.com/help
+talktalk,telecoms,TalkTalk,"talk talk",5,,https://help.talktalk.co.uk/,Official telecoms complaints route,official-route-only,,https://help.talktalk.co.uk/
+vodafone,telecoms,Vodafone,"vodafone uk",6,,https://www.vodafone.co.uk/help-and-information/,Official telecoms complaints route,official-route-only,,https://www.vodafone.co.uk/help-and-information/
+three,telecoms,Three,"three mobile 3 mobile",7,,https://www.three.co.uk/support,Official telecoms complaints route,official-route-only,,https://www.three.co.uk/support
+o2,telecoms,O2,"o2 mobile",8,,https://www.o2.co.uk/help,Official telecoms complaints route,official-route-only,,https://www.o2.co.uk/help
+plusnet,telecoms,Plusnet,"plus net",9,,https://www.plus.net/help/,Official telecoms complaints route,official-route-only,,https://www.plus.net/help/
+hyperoptic,telecoms,Hyperoptic,"hyper optic",10,,https://www.hyperoptic.com/help/,Official telecoms complaints route,official-route-only,,https://www.hyperoptic.com/help/
+zen-internet,telecoms,Zen Internet,"zen",11,,https://www.zen.co.uk/help,Official telecoms complaints route,official-route-only,,https://www.zen.co.uk/help
+amazon,retail,Amazon,"amazon uk",1,,https://www.amazon.co.uk/gp/help/customer/display.html,Official retailer support route,official-route-only,,https://www.amazon.co.uk/gp/help/customer/display.html
+argos,retail,Argos,"argos uk",2,,https://www.argos.co.uk/help/,Official retailer support route,official-route-only,,https://www.argos.co.uk/help/
+currys,retail,Currys,"currys pc world",3,,https://www.currys.co.uk/services/help-and-support.html,Official retailer support route,official-route-only,,https://www.currys.co.uk/services/help-and-support.html
+john-lewis,retail,John Lewis,"john lewis",4,,https://www.johnlewis.com/customer-services,Official retailer support route,official-route-only,,https://www.johnlewis.com/customer-services
+very,retail,Very,"very.co.uk",5,,https://www.very.co.uk/help/en/online-help,Official retailer support route,official-route-only,,https://www.very.co.uk/help/en/online-help
+ao,retail,AO,"ao.com",6,,https://ao.com/help-and-advice,Official retailer support route,official-route-only,,https://ao.com/help-and-advice
+ikea,retail,IKEA,"ikea uk",7,,https://www.ikea.com/gb/en/customer-service/,Official retailer support route,official-route-only,,https://www.ikea.com/gb/en/customer-service/
+b-and-q,retail,B&Q,"bq b and q",8,,https://www.diy.com/customer-support,Official retailer support route,official-route-only,,https://www.diy.com/customer-support
+next,retail,Next,"next uk",9,,https://www.next.co.uk/help,Official retailer support route,official-route-only,,https://www.next.co.uk/help
+tesco,retail,Tesco,"tesco uk",10,,https://www.tesco.com/help/,Official retailer support route,official-route-only,,https://www.tesco.com/help/
+asda,retail,Asda,"asda uk",11,,https://help.asda.com/,Official retailer support route,official-route-only,,https://help.asda.com/
+sainsburys,retail,Sainsbury's,"sainsburys",12,,https://help.sainsburys.co.uk/,Official retailer support route,official-route-only,,https://help.sainsburys.co.uk/
+ebay,retail,eBay,"ebay uk",13,,https://www.ebay.co.uk/help/home,Official marketplace support route,official-route-only,,https://www.ebay.co.uk/help/home
+parkingeye,parking,Parkingeye,"parking eye",1,,https://www.parkingeye.co.uk/,Official operator route,official-route-only,,https://www.parkingeye.co.uk/
+uk-parking-control,parking,UK Parking Control,"ukpc uk parking control",2,,https://www.ukparkingcontrol.com/,Official operator route,official-route-only,,https://www.ukparkingcontrol.com/
+excel-parking,parking,Excel Parking,"excel parking services",3,,https://excelparking.co.uk/,Official operator route,official-route-only,,https://excelparking.co.uk/
+smart-parking,parking,Smart Parking,"smartparking",4,,https://www.smartparking.com/,Official operator route,official-route-only,,https://www.smartparking.com/
+apcoa,parking,APCOA Parking,"apcoa",5,,https://www.apcoa.co.uk/,Official operator route,official-route-only,,https://www.apcoa.co.uk/
+parking-control-management,parking,Parking Control Management,"pcm",6,,https://www.parkingcontrolmanagement.co.uk/,Official operator route,official-route-only,,https://www.parkingcontrolmanagement.co.uk/
