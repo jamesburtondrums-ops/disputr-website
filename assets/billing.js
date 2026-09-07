@@ -1,69 +1,84 @@
 (() => {
-  const startButtons = document.querySelectorAll('[data-start-trial]');
-  const message = document.querySelector('[data-billing-message]');
-  const billingCard = document.querySelector('[data-billing-card]');
+  const startButtons = document.querySelectorAll("[data-start-trial]");
+  const message = document.querySelector("[data-billing-message]");
+  const billingCard = document.querySelector("[data-billing-card]");
 
   async function startTrial() {
-  if (message) {
-    message.textContent = "Preparing secure checkout…";
-  }
-
-  const response = await fetch(
-  "/api/billing/create-checkout-session",
-  {
-    method: "POST",
-    credentials: "same-origin",
-    headers: {
-      accept: "application/json",
-    },
-  }
-);
-
-const contentType = response.headers.get("content-type") || "";
-
-const data = contentType.includes("application/json")
-  ? await response.json()
-  : {
-      error:
-        "The server returned an unexpected response. Check the Cloudflare Worker logs.",
-    };
-
-if (response.status === 401) {
-  window.location.href = "login.html?next=checkout";
-  return;
-}
-
-if (!response.ok) {
-  throw new Error(
-    data.error || "Unable to start checkout."
-  );
-}
-
-if (!data.checkoutUrl) {
-  throw new Error(
-    "The server did not return a Stripe Checkout URL."
-  );
-}
-
-window.location.assign(data.checkoutUrl);
-  } catch (error) {
-    console.error("Unable to start checkout:", error);
-
     if (message) {
-      message.textContent =
-        error instanceof Error
-          ? error.message
-          : "Unable to start checkout. Please try again.";
+      message.textContent = "Preparing secure checkout…";
     }
-  }
-}
+
+    if (billingCard) {
+      billingCard.setAttribute("aria-busy", "true");
+    }
+
+    startButtons.forEach((button) => {
+      button.disabled = true;
+    });
+
+    try {
+      const response = await fetch(
+        "/api/billing/create-checkout-session",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            accept: "application/json",
+          },
+        }
+      );
+
+      const contentType = response.headers.get("content-type") || "";
+
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : {
+            error:
+              "The server returned an unexpected response. Please try again later.",
+          };
+
+      if (response.status === 401) {
+        window.location.href = "login.html?next=checkout";
+        return;
       }
-      if (!response.ok) throw new Error(data.error || 'Unable to start checkout.');
-      window.location.href = datacheckout.url;
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Unable to start checkout."
+        );
+      }
+
+      if (!data.checkoutUrl) {
+        throw new Error(
+          "The server did not return a Stripe Checkout URL."
+        );
+      }
+
+      window.location.assign(data.checkoutUrl);
     } catch (error) {
-      if (message) message.textContent = error.message;
+      console.error("Unable to start checkout:", error);
+
+      if (message) {
+        message.textContent =
+          error instanceof Error
+            ? error.message
+            : "Unable to start checkout. Please try again.";
+      }
+
+      startButtons.forEach((button) => {
+        button.disabled = false;
+      });
+    } finally {
+      if (billingCard) {
+        billingCard.removeAttribute("aria-busy");
+      }
     }
   }
+
+  startButtons.forEach((button) => {
+    button.addEventListener("click", startTrial);
+  });
+})();
 
   startButtons.forEach((button) => button.addEventListener('click', startTrial));
 
