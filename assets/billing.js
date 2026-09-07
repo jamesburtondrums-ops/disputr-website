@@ -123,4 +123,3 @@
         });
       })
       .catch(() => { billingCard.innerHTML = '<p>We could not load your billing information right now.</p>'; });
-})();
