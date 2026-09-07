@@ -59,7 +59,7 @@ window.location.assign(data.checkoutUrl);
 }
       }
       if (!response.ok) throw new Error(data.error || 'Unable to start checkout.');
-      window.location.href = data.url;
+      window.location.href = datacheckout.url;
     } catch (error) {
       if (message) message.textContent = error.message;
     }
