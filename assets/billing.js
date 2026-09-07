@@ -8,44 +8,44 @@
     message.textContent = "Preparing secure checkout…";
   }
 
-  try {
-    const response = await fetch(
-      "/api/billing/create-checkout-session",
-      {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          accept: "application/json",
-        },
-      }
-    );
+  const response = await fetch(
+  "/api/billing/create-checkout-session",
+  {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      accept: "application/json",
+    },
+  }
+);
 
-    const contentType = response.headers.get("content-type") || "";
-    const data = contentType.includes("application/json")
-      ? await response.json()
-      : {
-          error:
-            "The server returned an unexpected response. Check the Cloudflare Worker logs.",
-        };
+const contentType = response.headers.get("content-type") || "";
 
-    if (response.status === 401) {
-      window.location.href = "login.html?next=checkout";
-      return;
-    }
+const data = contentType.includes("application/json")
+  ? await response.json()
+  : {
+      error:
+        "The server returned an unexpected response. Check the Cloudflare Worker logs.",
+    };
 
-    if (!response.ok) {
-      throw new Error(
-        data.error || `Checkout request failed (${response.status}).`
-      );
-    }
+if (response.status === 401) {
+  window.location.href = "login.html?next=checkout";
+  return;
+}
 
-    if (!data.checkoutUrl) {
-      throw new Error(
-        "Checkout was created, but the server did not return a Stripe Checkout URL."
-      );
-    }
+if (!response.ok) {
+  throw new Error(
+    data.error || "Unable to start checkout."
+  );
+}
 
-    window.location.assign(data.checkoutUrl);
+if (!data.checkoutUrl) {
+  throw new Error(
+    "The server did not return a Stripe Checkout URL."
+  );
+}
+
+window.location.assign(data.checkoutUrl);
   } catch (error) {
     console.error("Unable to start checkout:", error);
 
