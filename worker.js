@@ -369,7 +369,9 @@ async function createCheckoutSession(request, env) {
     );
   }
 
-  return json({ checkoutUrl: stripeResult.url });
+ return json({
+  checkoutUrl: stripeResult.url,
+});
 }
 
 /* -------------------------------------------------------------------------- */
