@@ -230,24 +230,26 @@ async function generateComplaint(request, env) {
     };
 
     const aiResponse = await env.AI.run(
-      "@cf/meta/llama-3.1-8b-instruct-fast",
+  "@cf/meta/llama-3.1-8b-instruct-fast",
+  {
+    messages: [
       {
-        messages: [
-          {
-            role: "system",
-            content:
-              "Return only a valid JSON object. Never use Markdown code fences."
-          },
-          {
-            role: "user",
-            content: makePrompt(complaintData)
-          }
-        ],
-        response_format: {
-          type: "json_object"
-        }
+        role: "system",
+        content:
+          "Return only a complete valid JSON object. Do not use Markdown code fences. " +
+          "Never stop until every requested JSON key and its closing brace are present."
+      },
+      {
+        role: "user",
+        content: makePrompt(complaintData)
       }
-    );
+    ],
+    response_format: {
+      type: "json_object"
+    },
+    max_tokens: 3000
+  }
+);
 
     const text = removeCodeFences(getTextFromAIResponse(aiResponse));
 
