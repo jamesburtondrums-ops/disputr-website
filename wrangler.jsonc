@@ -16,7 +16,7 @@
     {
       "binding": "DB",
       "database_name": "disputr",
-      "database_id": "PASTE_THE_REAL_D1_DATABASE_UUID_HERE"
+      "database_id": "73534e26-aa23-4c93-8cf1-531f76817ddb"
     }
   ]
 }
