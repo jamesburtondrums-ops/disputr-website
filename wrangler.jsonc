@@ -15,7 +15,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "disputr",
+      "database_name": "disputr-db",
       "database_id": "73534e26-aa23-4c93-8cf1-531f76817ddb"
     }
   ]
