@@ -362,18 +362,21 @@ async function createCheckoutSession(request, env) {
     );
   }
 
-  if (!stripeResult?.url) {
-    return json(
-      { error: "Stripe did not return a Checkout URL." },
-      502
-    );
-  }
-
- return json({
-  checkoutUrl: stripeResult.url,
-
+ if (!stripeResult?.url) {
+  return json(
+    {
+      error: "Stripe did not return a Checkout URL.",
+    },
+    502
+  );
 }
 
+return json(
+  {
+    checkoutUrl: stripeResult.url,
+  },
+  200
+);
 /* -------------------------------------------------------------------------- */
 /* Stripe webhook                                                             */
 /* -------------------------------------------------------------------------- */
