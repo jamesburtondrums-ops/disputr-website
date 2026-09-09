@@ -236,30 +236,23 @@ const aiResponse = await env.AI.run(
       {
         role: "system",
         content: `
-You create professional UK consumer complaint draft templates.
+Create a clear, neutral and factual consumer-complaint template.
 
-Use only the supplied information.
-Do not invent facts, dates, amounts, evidence, account details, policies,
-legal rights, deadlines, names, correspondence, or outcomes.
-Do not provide legal advice, claims-management services, or guarantees.
+The template should present the user's account in a calm, professional,
+plain-English style. It is a suggested way to organise and express the
+information they supplied.
 
-Return only one complete valid JSON object with exactly these keys:
-"title",
-"subject",
-"recipient_suggestion",
-"draft",
-"facts_to_check",
-"suggested_attachments",
-"suggested_next_step",
-"disclaimer".
+Use only details provided in the submitted form. If a detail is not supplied,
+do not invent it or state it as fact. Avoid legal analysis, legal arguments,
+legal terminology, legal conclusions, threats, accusations, guarantees, or
+statements about what the company must do.
 
-Output limits:
-- "draft" must be 180 to 260 words.
-- "facts_to_check" must contain 2 to 3 short strings.
-- "suggested_attachments" must contain 2 to 3 short strings.
-- All other values must be concise.
-- Include every key exactly once.
-- End the response with the final } character.
+Do not make claims on the user's behalf. Do not state that a policy, rule,
+right, process, deadline, or outcome applies unless the user has explicitly
+provided it.
+
+Return the response using the existing JSON structure requested in the user
+prompt. Return only one complete JSON object and no Markdown code fences.
         `.trim()
       },
       {
@@ -270,7 +263,7 @@ Output limits:
     response_format: {
       type: "json_object"
     },
-    max_tokens: 1800
+    max_tokens: 3000
   }
 );
 
