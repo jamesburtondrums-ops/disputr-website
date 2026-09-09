@@ -286,7 +286,7 @@ async function generateComplaint(request, env) {
 
     try {
       aiResponse = await env.AI.run(
-        "@cf/meta/llama-3.1-8b-instruct-fast",
+  'openai/gpt-5.4-mini',
         {
           messages: [
             {
