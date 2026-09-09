@@ -45,11 +45,51 @@ function getTextFromAIResponse(result) {
 }
 
 function removeCodeFences(value) {
-  return value
+  return String(value || "")
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
-    .replace(/\s*```$/, "")
+    .replace(/\s*```$/i, "")
     .trim();
+}
+
+function extractCompleteJsonObject(value) {
+  const text = String(value || "").trim();
+
+  if (!text.startsWith("{")) {
+    return "";
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === "\\") {
+        escaped = true;
+      } else if (character === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (character === '"') {
+      inString = true;
+    } else if (character === "{") {
+      depth += 1;
+    } else if (character === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(0, index + 1);
+      }
+    }
+  }
+
+  return "";
 }
 
 function makePrompt(data) {
@@ -69,6 +109,10 @@ Rules:
 - Do not use threats, insults, accusations, or aggressive language.
 - If key information is missing, add it to facts_to_check rather than guessing.
 - Keep the letter concise, polite, and firm.
+- Keep draft to no more than 220 words.
+- Use 2 to 4 short items in facts_to_check.
+- Use 1 to 4 short items in suggested_attachments.
+- Keep title, subject, recipient_suggestion and suggested_next_step concise.
 - Return JSON only. Do not use Markdown or code fences.
 - facts_to_check and suggested_attachments must be arrays of strings.
 - The other fields must be strings.
@@ -81,10 +125,6 @@ Return exactly these keys:
 - facts_to_check
 - suggested_attachments
 - suggested_next_step
-- disclaimer
-
-Use this exact disclaimer:
-"${DISCLAIMER}"
 
 Customer information:
 ${JSON.stringify(data, null, 2)}
@@ -108,6 +148,7 @@ export default {
           ok: true,
           service: "Disputr AI and billing service",
           ai_binding_present: Boolean(env.AI),
+          assets_binding_present: Boolean(env.ASSETS),
           d1_binding_present: Boolean(env.DB),
           stripe_checkout_configured: Boolean(
             env.STRIPE_SECRET_KEY && env.STRIPE_PRICE_ID
@@ -137,10 +178,7 @@ export default {
         return await createPortalSession(request, env);
       }
 
-      if (
-        request.method === "GET" &&
-        url.pathname === "/api/me"
-      ) {
+      if (request.method === "GET" && url.pathname === "/api/me") {
         return await getCurrentUserBilling(request, env);
       }
 
@@ -149,6 +187,27 @@ export default {
         url.pathname === "/api/webhooks/stripe"
       ) {
         return await handleStripeWebhook(request, env);
+      }
+
+      if (url.pathname.startsWith("/api/")) {
+        return json({ error: "API route not found." }, 404);
+      }
+
+      if (!env.ASSETS || typeof env.ASSETS.fetch !== "function") {
+        console.error("ASSETS binding is unavailable:", {
+          path: url.pathname
+        });
+
+        return new Response(
+          "Static assets are not attached to this Worker deployment.",
+          {
+            status: 503,
+            headers: {
+              "content-type": "text/plain; charset=UTF-8",
+              "cache-control": "no-store"
+            }
+          }
+        );
       }
 
       return env.ASSETS.fetch(request);
@@ -200,13 +259,7 @@ async function generateComplaint(request, env) {
     const desiredOutcome = cleanText(body.desiredOutcome, 1500);
     const tone = cleanText(body.tone, 100) || "Firm but polite";
 
-    if (
-      !category ||
-      !company ||
-      !issueType ||
-      !whatHappened ||
-      !desiredOutcome
-    ) {
+    if (!category || !company || !issueType || !whatHappened || !desiredOutcome) {
       return json(
         {
           error:
@@ -229,13 +282,16 @@ async function generateComplaint(request, env) {
       preferred_tone: tone
     };
 
-const aiResponse = await env.AI.run(
-  "@cf/meta/llama-3.1-8b-instruct-fast",
-  {
-    messages: [
-      {
-        role: "system",
-        content: `
+    let aiResponse;
+
+    try {
+      aiResponse = await env.AI.run(
+        "@cf/meta/llama-3.1-8b-instruct-fast",
+        {
+          messages: [
+            {
+              role: "system",
+              content: `
 Create a clear, neutral and factual consumer-complaint template.
 
 The template should present the user's account in a calm, professional,
@@ -251,28 +307,50 @@ Do not make claims on the user's behalf. Do not state that a policy, rule,
 right, process, deadline, or outcome applies unless the user has explicitly
 provided it.
 
-Return the response using the existing JSON structure requested in the user
+Return the response using the exact JSON structure requested in the user
 prompt. Return only one complete JSON object and no Markdown code fences.
-        `.trim()
-      },
-      {
-        role: "user",
-        content: makePrompt(complaintData)
-      }
-    ],
-    response_format: {
-      type: "json_object"
-    },
-    max_tokens: 3000
-  }
-);
+              `.trim()
+            },
+            {
+              role: "user",
+              content: makePrompt(complaintData)
+            }
+          ],
+          response_format: {
+            type: "json_object"
+          },
+          max_tokens: 3000
+        }
+      );
+    } catch (error) {
+      console.error("Workers AI invocation failed:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : null,
+        model: "@cf/meta/llama-3.1-8b-instruct-fast"
+      });
 
-    const text = removeCodeFences(getTextFromAIResponse(aiResponse));
-
-    if (!text) {
-      console.error("Workers AI returned no usable text:", aiResponse);
       return json(
-        { error: "The AI did not return a draft. Please try again." },
+        {
+          error:
+            "Draft generation is temporarily unavailable. Please try again shortly."
+        },
+        502
+      );
+    }
+
+    const rawText = removeCodeFences(getTextFromAIResponse(aiResponse));
+    const completeJson = extractCompleteJsonObject(rawText);
+
+    if (!completeJson) {
+      console.error("Workers AI returned incomplete JSON:", {
+        text: rawText.slice(0, 4000)
+      });
+
+      return json(
+        {
+          error:
+            "The draft could not be completed. Please try again."
+        },
         502
       );
     }
@@ -280,17 +358,17 @@ prompt. Return only one complete JSON object and no Markdown code fences.
     let result;
 
     try {
-      result = JSON.parse(text);
+      result = JSON.parse(completeJson);
     } catch (error) {
       console.error("Workers AI returned invalid JSON:", {
         message: error instanceof Error ? error.message : String(error),
-        text
+        text: completeJson.slice(0, 4000)
       });
 
       return json(
         {
           error:
-            "The AI response could not be processed safely. Please try again."
+            "The AI returned a draft in an unexpected format. Please try again."
         },
         502
       );
@@ -303,8 +381,7 @@ prompt. Return only one complete JSON object and no Markdown code fences.
       "draft",
       "facts_to_check",
       "suggested_attachments",
-      "suggested_next_step",
-      "disclaimer"
+      "suggested_next_step"
     ];
 
     for (const key of requiredKeys) {
@@ -351,22 +428,6 @@ prompt. Return only one complete JSON object and no Markdown code fences.
 /* Billing: authentication lookup                                             */
 /* -------------------------------------------------------------------------- */
 
-/*
-  This assumes your existing authentication worker stores the signed-in user's
-  session token in a cookie named "disputr_session", and D1 contains:
-
-  sessions:
-  - token
-  - user_id
-  - expires_at
-
-  users:
-  - id
-  - email
-  - premium
-
-  If your session cookie/table/column names differ, change only this function.
-*/
 async function requireAuth(request, env) {
   requireDatabase(env);
 
@@ -451,17 +512,11 @@ async function createCheckoutSession(request, env) {
   requireDatabase(env);
 
   if (!env.STRIPE_SECRET_KEY) {
-    return json(
-      { error: "STRIPE_SECRET_KEY is not configured." },
-      500
-    );
+    return json({ error: "STRIPE_SECRET_KEY is not configured." }, 500);
   }
 
   if (!env.STRIPE_PRICE_ID) {
-    return json(
-      { error: "STRIPE_PRICE_ID is not configured." },
-      500
-    );
+    return json({ error: "STRIPE_PRICE_ID is not configured." }, 500);
   }
 
   const user = await requireAuth(request, env);
@@ -506,27 +561,15 @@ async function createCheckoutSession(request, env) {
     "cancel_url",
     `${origin}/pricing.html?checkout=canceled`
   );
+  form.set("line_items[price]", env.STRIPE_PRICE_ID);
+  form.set("line_items[quantity]", "1");
 
-  form.set("line_items[price]", env.STRIPE_PRICE_ID);[0]
-  form.set("line_items[quantity]", "1");[0]
-
-  /*
-    Optional 14-day trial. Set STRIPE_TRIAL_DAYS to 14 in Cloudflare Variables.
-    Omit the variable if your Stripe Price/Product already manages the trial.
-  */
   const trialDays = Number(env.STRIPE_TRIAL_DAYS || 0);
 
   if (Number.isInteger(trialDays) && trialDays > 0) {
-    form.set(
-      "subscription_data[trial_period_days]",
-      String(trialDays)
-    );
+    form.set("subscription_data[trial_period_days]", String(trialDays));
   }
 
-  /*
-    Do not trust a browser-supplied user ID. These values originate from the
-    authenticated D1 user record returned by requireAuth().
-  */
   form.set("client_reference_id", user.id);
   form.set("metadata[user_id]", user.id);
   form.set("subscription_data[metadata][user_id]", user.id);
@@ -562,15 +605,10 @@ async function createCheckoutSession(request, env) {
   }
 
   if (!stripeResult?.url) {
-    return json(
-      { error: "Stripe did not return a Checkout URL." },
-      502
-    );
+    return json({ error: "Stripe did not return a Checkout URL." }, 502);
   }
 
-  return json({
-    checkoutUrl: stripeResult.url
-  });
+  return json({ checkoutUrl: stripeResult.url });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -581,10 +619,7 @@ async function createPortalSession(request, env) {
   requireDatabase(env);
 
   if (!env.STRIPE_SECRET_KEY) {
-    return json(
-      { error: "STRIPE_SECRET_KEY is not configured." },
-      500
-    );
+    return json({ error: "STRIPE_SECRET_KEY is not configured." }, 500);
   }
 
   const user = await requireAuth(request, env);
@@ -617,10 +652,7 @@ async function createPortalSession(request, env) {
   const form = new URLSearchParams();
 
   form.set("customer", subscription.stripe_customer_id);
-  form.set(
-    "return_url",
-    `${origin}/subscription-and-billing.html`
-  );
+  form.set("return_url", `${origin}/subscription-and-billing.html`);
 
   const stripeResponse = await fetch(
     "https://api.stripe.com/v1/billing_portal/sessions",
@@ -659,9 +691,7 @@ async function createPortalSession(request, env) {
     );
   }
 
-  return json({
-    url: stripeResult.url
-  });
+  return json({ url: stripeResult.url });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -672,27 +702,16 @@ async function handleStripeWebhook(request, env) {
   requireDatabase(env);
 
   if (!env.STRIPE_WEBHOOK_SECRET) {
-    return json(
-      { error: "STRIPE_WEBHOOK_SECRET is not configured." },
-      500
-    );
+    return json({ error: "STRIPE_WEBHOOK_SECRET is not configured." }, 500);
   }
 
   const signatureHeader = request.headers.get("stripe-signature");
 
   if (!signatureHeader) {
-    return json(
-      { error: "Missing Stripe-Signature header." },
-      400
-    );
+    return json({ error: "Missing Stripe-Signature header." }, 400);
   }
 
-  /*
-    Keep the request body raw for signature verification. Never call
-    request.json() before request.text() in this endpoint.
-  */
   const rawBody = await request.text();
-
   const signatureValid = await verifyStripeSignature(
     rawBody,
     signatureHeader,
@@ -700,10 +719,7 @@ async function handleStripeWebhook(request, env) {
   );
 
   if (!signatureValid) {
-    return json(
-      { error: "Invalid Stripe webhook signature." },
-      400
-    );
+    return json({ error: "Invalid Stripe webhook signature." }, 400);
   }
 
   let event;
@@ -718,10 +734,6 @@ async function handleStripeWebhook(request, env) {
     return json({ error: "Malformed Stripe event." }, 400);
   }
 
-  /*
-    Insert first: the primary key on stripe_event_id prevents duplicate
-    changes when Stripe retries delivery of the same event.
-  */
   const insertEvent = await env.DB.prepare(
     `
     INSERT INTO stripe_webhook_events (
@@ -734,11 +746,7 @@ async function handleStripeWebhook(request, env) {
     ON CONFLICT(stripe_event_id) DO NOTHING
     `
   )
-    .bind(
-      event.id,
-      event.type,
-      Number(event.created || 0)
-    )
+    .bind(event.id, event.type, Number(event.created || 0))
     .run();
 
   if (insertEvent.meta.changes === 0) {
@@ -748,10 +756,6 @@ async function handleStripeWebhook(request, env) {
   try {
     await processStripeEvent(env.DB, event);
   } catch (error) {
-    /*
-      Allow Stripe to retry a failed event. If processing fails, remove the
-      event ledger entry before returning a 500.
-    */
     await env.DB.prepare(
       "DELETE FROM stripe_webhook_events WHERE stripe_event_id = ?"
     )
@@ -796,10 +800,6 @@ async function recordCheckoutSession(db, event, session) {
   const customerId = stripeId(session.customer);
   const userId = getInternalUserId(session);
 
-  /*
-    The subscription event is authoritative for final status and dates.
-    This simply keeps the user/customer linkage if checkout arrives first.
-  */
   if (!subscriptionId || !userId) {
     return;
   }
@@ -830,12 +830,7 @@ async function recordCheckoutSession(db, event, session) {
       updated_at = unixepoch()
     `
   )
-    .bind(
-      subscriptionId,
-      customerId,
-      userId,
-      Number(event.created || 0)
-    )
+    .bind(subscriptionId, customerId, userId, Number(event.created || 0))
     .run();
 }
 
@@ -955,12 +950,7 @@ async function recordPaymentFailure(db, event, invoice) {
     WHERE stripe_subscription_id = ?
     `
   )
-    .bind(
-      eventCreated,
-      eventCreated,
-      eventCreated,
-      subscriptionId
-    )
+    .bind(eventCreated, eventCreated, eventCreated, subscriptionId)
     .run();
 
   await syncPremiumStatus(db, subscriptionId);
@@ -1008,10 +998,7 @@ async function verifyStripeSignature(rawBody, signatureHeader, secret) {
 
   const now = Math.floor(Date.now() / 1000);
 
-  if (
-    Math.abs(now - parsed.timestamp) >
-    WEBHOOK_TOLERANCE_SECONDS
-  ) {
+  if (Math.abs(now - parsed.timestamp) > WEBHOOK_TOLERANCE_SECONDS) {
     return false;
   }
 
@@ -1034,9 +1021,7 @@ async function verifyStripeSignature(rawBody, signatureHeader, secret) {
     new TextEncoder().encode(signedPayload)
   );
 
-  const expectedSignature = bytesToHex(
-    new Uint8Array(signatureBuffer)
-  );
+  const expectedSignature = bytesToHex(new Uint8Array(signatureBuffer));
 
   return parsed.v1Signatures.some((receivedSignature) =>
     timingSafeEqualHex(expectedSignature, receivedSignature)
@@ -1084,8 +1069,7 @@ function timingSafeEqualHex(left, right) {
   let difference = 0;
 
   for (let index = 0; index < left.length; index += 1) {
-    difference |=
-      left.charCodeAt(index) ^ right.charCodeAt(index);
+    difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
   }
 
   return difference === 0;
@@ -1117,7 +1101,11 @@ function parseCookies(cookieHeader) {
     const value = part.slice(separator + 1).trim();
 
     if (key) {
-      cookies[key] = decodeURIComponent(value);
+      try {
+        cookies[key] = decodeURIComponent(value);
+      } catch {
+        cookies[key] = value;
+      }
     }
   }
 
@@ -1125,14 +1113,9 @@ function parseCookies(cookieHeader) {
 }
 
 function getInternalUserId(object) {
-  const value =
-    object?.metadata?.user_id ||
-    object?.client_reference_id ||
-    null;
+  const value = object?.metadata?.user_id || object?.client_reference_id || null;
 
-  return typeof value === "string" && value.length > 0
-    ? value
-    : null;
+  return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 function stripeId(value) {
