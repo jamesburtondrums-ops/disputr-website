@@ -338,41 +338,53 @@ prompt. Return only one complete JSON object and no Markdown code fences.
       );
     }
 
-    const rawText = removeCodeFences(getTextFromAIResponse(aiResponse));
-    const completeJson = extractCompleteJsonObject(rawText);
+   let result;
 
-    if (!completeJson) {
-      console.error("Workers AI returned incomplete JSON:", {
-        text: rawText.slice(0, 4000)
-      });
+if (
+  aiResponse &&
+  typeof aiResponse === "object" &&
+  aiResponse.response &&
+  typeof aiResponse.response === "object" &&
+  !Array.isArray(aiResponse.response)
+) {
+  result = aiResponse.response;
+} else {
+  const rawText = removeCodeFences(getTextFromAIResponse(aiResponse));
+  const completeJson = extractCompleteJsonObject(rawText);
 
-      return json(
-        {
-          error:
-            "The draft could not be completed. Please try again."
-        },
-        502
-      );
-    }
+  if (!completeJson) {
+    console.error("Workers AI returned no complete JSON object:", {
+      type: typeof aiResponse,
+      keys: aiResponse && typeof aiResponse === "object"
+        ? Object.keys(aiResponse)
+        : [],
+      text: rawText.slice(0, 4000)
+    });
 
-    let result;
+    return json(
+      {
+        error: "The draft could not be completed. Please try again."
+      },
+      502
+    );
+  }
 
-    try {
-      result = JSON.parse(completeJson);
-    } catch (error) {
-      console.error("Workers AI returned invalid JSON:", {
-        message: error instanceof Error ? error.message : String(error),
-        text: completeJson.slice(0, 4000)
-      });
+  try {
+    result = JSON.parse(completeJson);
+  } catch (error) {
+    console.error("Workers AI returned invalid JSON:", {
+      message: error instanceof Error ? error.message : String(error),
+      text: completeJson.slice(0, 4000)
+    });
 
-      return json(
-        {
-          error:
-            "The AI returned a draft in an unexpected format. Please try again."
-        },
-        502
-      );
-    }
+    return json(
+      {
+        error: "The AI returned a draft in an unexpected format. Please try again."
+      },
+      502
+    );
+  }
+}
 
     const requiredKeys = [
       "title",
