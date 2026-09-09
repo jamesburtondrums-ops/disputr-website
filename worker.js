@@ -229,15 +229,38 @@ async function generateComplaint(request, env) {
       preferred_tone: tone
     };
 
-    const aiResponse = await env.AI.run(
+const aiResponse = await env.AI.run(
   "@cf/meta/llama-3.1-8b-instruct-fast",
   {
     messages: [
       {
         role: "system",
-        content:
-          "Return only a complete valid JSON object. Do not use Markdown code fences. " +
-          "Never stop until every requested JSON key and its closing brace are present."
+        content: `
+You create professional UK consumer complaint draft templates.
+
+Use only the supplied information.
+Do not invent facts, dates, amounts, evidence, account details, policies,
+legal rights, deadlines, names, correspondence, or outcomes.
+Do not provide legal advice, claims-management services, or guarantees.
+
+Return only one complete valid JSON object with exactly these keys:
+"title",
+"subject",
+"recipient_suggestion",
+"draft",
+"facts_to_check",
+"suggested_attachments",
+"suggested_next_step",
+"disclaimer".
+
+Output limits:
+- "draft" must be 180 to 260 words.
+- "facts_to_check" must contain 2 to 3 short strings.
+- "suggested_attachments" must contain 2 to 3 short strings.
+- All other values must be concise.
+- Include every key exactly once.
+- End the response with the final } character.
+        `.trim()
       },
       {
         role: "user",
@@ -247,7 +270,7 @@ async function generateComplaint(request, env) {
     response_format: {
       type: "json_object"
     },
-    max_tokens: 3000
+    max_tokens: 1800
   }
 );
 
