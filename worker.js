@@ -6,10 +6,37 @@ const CORS_HEADERS = {
   "Cache-Control": "no-store"
 };
 
-const DISCLAIMER =
-  "Suggested wording only. This draft is based on the information you entered. Check every fact, remove anything inaccurate, and personalise it before using it. Disputr does not provide legal advice or guarantee an outcome.";
-
+const DISCLAIMER = "Suggested wording only. This draft is based on the information you entered. Check every fact, remove anything inaccurate, and personalise it before using it. Disputr does not provide legal advice or guarantee an outcome.";
 const WEBHOOK_TOLERANCE_SECONDS = 300;
+
+const OPENAI_COMPLAINT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "title",
+    "subject",
+    "recipient_suggestion",
+    "draft",
+    "facts_to_check",
+    "suggested_attachments",
+    "suggested_next_step"
+  ],
+  properties: {
+    title: { type: "string" },
+    subject: { type: "string" },
+    recipient_suggestion: { type: "string" },
+    draft: { type: "string" },
+    facts_to_check: {
+      type: "array",
+      items: { type: "string" }
+    },
+    suggested_attachments: {
+      type: "array",
+      items: { type: "string" }
+    },
+    suggested_next_step: { type: "string" }
+  }
+};
 
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -24,72 +51,6 @@ function json(data, status = 200, extraHeaders = {}) {
 function cleanText(value, maxLength = 4000) {
   if (typeof value !== "string") return "";
   return value.trim().slice(0, maxLength);
-}
-
-function getTextFromAIResponse(result) {
-  if (typeof result === "string") return result;
-  if (result && typeof result.response === "string") return result.response;
-  if (result && typeof result.output_text === "string") return result.output_text;
-
-  if (result && Array.isArray(result.output)) {
-    const text = result.output
-      .flatMap((item) => (Array.isArray(item.content) ? item.content : []))
-      .map((content) => content.text || content.value || "")
-      .filter(Boolean)
-      .join("\n");
-
-    if (text) return text;
-  }
-
-  return "";
-}
-
-function removeCodeFences(value) {
-  return String(value || "")
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-}
-
-function extractCompleteJsonObject(value) {
-  const text = String(value || "").trim();
-
-  if (!text.startsWith("{")) {
-    return "";
-  }
-
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index];
-
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-      } else if (character === "\\") {
-        escaped = true;
-      } else if (character === '"') {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (character === '"') {
-      inString = true;
-    } else if (character === "{") {
-      depth += 1;
-    } else if (character === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        return text.slice(0, index + 1);
-      }
-    }
-  }
-
-  return "";
 }
 
 function makePrompt(data) {
@@ -108,27 +69,164 @@ Rules:
 - Do not promise a successful complaint or outcome.
 - Do not use threats, insults, accusations, or aggressive language.
 - If key information is missing, add it to facts_to_check rather than guessing.
-- Keep the letter concise, polite, and firm.
-- Keep draft to no more than 220 words.
+- Keep the letter professional, factual, polite and firm.
+- Where the supplied facts support it, make the draft substantive and clearly structured.
+- Aim for 350 to 500 words in the draft, using 5 to 7 short paragraphs.
+- Use the supplied facts to cover: the reason for writing, a date-order summary of what happened, any relevant impact or costs, any previous contact, the requested outcome, and a request for a written response.
+- Do not pad the draft, repeat points, or add information that was not supplied.
+- If the submitted information is brief, write only what the facts support and add missing details to facts_to_check.
 - Use 2 to 4 short items in facts_to_check.
 - Use 1 to 4 short items in suggested_attachments.
 - Keep title, subject, recipient_suggestion and suggested_next_step concise.
-- Return JSON only. Do not use Markdown or code fences.
-- facts_to_check and suggested_attachments must be arrays of strings.
-- The other fields must be strings.
-
-Return exactly these keys:
-- title
-- subject
-- recipient_suggestion
-- draft
-- facts_to_check
-- suggested_attachments
-- suggested_next_step
 
 Customer information:
 ${JSON.stringify(data, null, 2)}
 `.trim();
+}
+
+function getOpenAIOutputText(payload) {
+  if (!Array.isArray(payload?.output)) {
+    return "";
+  }
+
+  return payload.output
+    .flatMap((item) => Array.isArray(item?.content) ? item.content : [])
+    .filter((content) => content?.type === "output_text")
+    .map((content) => typeof content?.text === "string" ? content.text : "")
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function generateComplaintWithOpenAI(complaintData, env) {
+  if (!env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not configured.");
+  }
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "gpt-5.4-mini",
+      input: [
+        {
+          role: "developer",
+          content: [
+            {
+              type: "input_text",
+              text: `
+Create a clear, neutral, factual and professional UK-English suggested consumer-complaint template.
+
+Use only the information supplied in the submitted form. Do not invent facts, dates, money amounts, references, evidence, policies, previous contact, deadlines, laws, regulations, rights, or outcomes.
+
+Do not give legal advice or legal analysis. Do not make legal conclusions. Do not use threats, accusations, aggressive language, promises, guarantees, or statements that the company must provide a particular remedy.
+
+Write an editable suggested template, not a claim made on the user's behalf. Make the draft professional, factual, polite and firm.
+
+Where the submitted facts support it, aim for 350 to 500 words in 5 to 7 short paragraphs. Structure the draft to cover the reason for writing, a clear date-order account, relevant impact or evidenced costs, previous contact where supplied, the requested outcome, and a request for a written response.
+
+Use short, readable paragraphs rather than a wall of text. Do not use headings inside the draft unless the user supplied a reason to do so.
+
+Finish the draft with a clear request for the company to investigate and provide a written response. Do not add a deadline unless the user supplied one.
+
+Do not pad the letter, repeat points, or invent missing facts. If the user has supplied only limited information, write only what the facts support and identify missing details in facts_to_check.
+
+Where the submitted facts support it, aim for 350 to 500 words in 5 to 7 short paragraphs. Structure the draft to cover the reason for writing, a clear date-order account, relevant impact or evidenced costs, previous contact where supplied, the requested outcome, and a request for a written response.
+
+Do not pad the letter, repeat points, or invent missing facts. If the user has supplied only limited information, write only what the facts support and identify missing details in facts_to_check.
+
+Provide 2 to 4 short facts_to_check items and 1 to 4 short suggested_attachments items. If relevant attachments were not mentioned, suggest ordinary factual records the user can check before sending.
+
+Follow the supplied JSON Schema exactly.
+              `.trim()
+            }
+          ]
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: makePrompt(complaintData)
+            }
+          ]
+        }
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "complaint_template",
+          strict: true,
+          schema: OPENAI_COMPLAINT_SCHEMA
+        }
+      },
+      max_output_tokens: 1800
+    })
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    console.error("OpenAI request failed:", {
+      status: response.status,
+      message: payload?.error?.message || null,
+      type: payload?.error?.type || null,
+      code: payload?.error?.code || null
+    });
+
+    throw new Error(
+      payload?.error?.message ||
+      `OpenAI request failed with HTTP ${response.status}.`
+    );
+  }
+
+  if (payload?.status === "incomplete") {
+    console.error("OpenAI response incomplete:", {
+      id: payload?.id || null,
+      reason: payload?.incomplete_details?.reason || null
+    });
+    throw new Error("OpenAI could not complete the draft.");
+  }
+
+  if (payload?.status !== "completed") {
+    console.error("OpenAI response did not complete:", {
+      id: payload?.id || null,
+      status: payload?.status || null
+    });
+    throw new Error("OpenAI did not complete the draft.");
+  }
+
+  const outputText = getOpenAIOutputText(payload);
+
+  if (!outputText.trim()) {
+    console.error("OpenAI returned no extractable output text:", {
+      id: payload?.id || null,
+      status: payload?.status || null,
+      outputTypes: Array.isArray(payload?.output)
+        ? payload.output.map((item) => item?.type || null)
+        : [],
+      contentTypes: Array.isArray(payload?.output)
+        ? payload.output.flatMap((item) =>
+            Array.isArray(item?.content)
+              ? item.content.map((content) => content?.type || null)
+              : []
+          )
+        : []
+    });
+    throw new Error("OpenAI returned no usable draft.");
+  }
+
+  try {
+    return JSON.parse(outputText);
+  } catch (error) {
+    console.error("OpenAI structured output was not valid JSON:", {
+      id: payload?.id || null,
+      message: error instanceof Error ? error.message : String(error)
+    });
+    throw new Error("OpenAI returned an unexpected response format.");
+  }
 }
 
 export default {
@@ -147,7 +245,7 @@ export default {
         return json({
           ok: true,
           service: "Disputr AI and billing service",
-          ai_binding_present: Boolean(env.AI),
+          openai_configured: Boolean(env.OPENAI_API_KEY),
           assets_binding_present: Boolean(env.ASSETS),
           d1_binding_present: Boolean(env.DB),
           stripe_checkout_configured: Boolean(
@@ -157,24 +255,15 @@ export default {
         });
       }
 
-      if (
-        request.method === "POST" &&
-        url.pathname === "/api/generate-complaint"
-      ) {
+      if (request.method === "POST" && url.pathname === "/api/generate-complaint") {
         return await generateComplaint(request, env);
       }
 
-      if (
-        request.method === "POST" &&
-        url.pathname === "/api/billing/create-checkout-session"
-      ) {
+      if (request.method === "POST" && url.pathname === "/api/billing/create-checkout-session") {
         return await createCheckoutSession(request, env);
       }
 
-      if (
-        request.method === "POST" &&
-        url.pathname === "/api/billing/create-portal-session"
-      ) {
+      if (request.method === "POST" && url.pathname === "/api/billing/create-portal-session") {
         return await createPortalSession(request, env);
       }
 
@@ -182,10 +271,7 @@ export default {
         return await getCurrentUserBilling(request, env);
       }
 
-      if (
-        request.method === "POST" &&
-        url.pathname === "/api/webhooks/stripe"
-      ) {
+      if (request.method === "POST" && url.pathname === "/api/webhooks/stripe") {
         return await handleStripeWebhook(request, env);
       }
 
@@ -194,20 +280,14 @@ export default {
       }
 
       if (!env.ASSETS || typeof env.ASSETS.fetch !== "function") {
-        console.error("ASSETS binding is unavailable:", {
-          path: url.pathname
-        });
-
-        return new Response(
-          "Static assets are not attached to this Worker deployment.",
-          {
-            status: 503,
-            headers: {
-              "content-type": "text/plain; charset=UTF-8",
-              "cache-control": "no-store"
-            }
+        console.error("ASSETS binding is unavailable:", { path: url.pathname });
+        return new Response("Static assets are not attached to this Worker deployment.", {
+          status: 503,
+          headers: {
+            "content-type": "text/plain; charset=UTF-8",
+            "cache-control": "no-store"
           }
-        );
+        });
       }
 
       return env.ASSETS.fetch(request);
@@ -230,24 +310,9 @@ export default {
   }
 };
 
-/* -------------------------------------------------------------------------- */
-/* Complaint generation                                                       */
-/* -------------------------------------------------------------------------- */
-
 async function generateComplaint(request, env) {
-  if (!env.AI) {
-    return json(
-      {
-        error:
-          "Workers AI is not available to this Worker. Check that the Workers AI binding is named AI."
-      },
-      503
-    );
-  }
-
   try {
     const body = await request.json();
-
     const category = cleanText(body.category, 100);
     const company = cleanText(body.company, 150);
     const issueType = cleanText(body.issueType, 150);
@@ -262,8 +327,7 @@ async function generateComplaint(request, env) {
     if (!category || !company || !issueType || !whatHappened || !desiredOutcome) {
       return json(
         {
-          error:
-            "Please complete the category, company, issue type, what happened, and desired outcome fields."
+          error: "Please complete the category, company, issue type, what happened, and desired outcome fields."
         },
         400
       );
@@ -282,109 +346,32 @@ async function generateComplaint(request, env) {
       preferred_tone: tone
     };
 
-    let aiResponse;
+    let result;
 
     try {
-      aiResponse = await env.AI.run(
-  'openai/gpt-5.4-mini',
-        {
-          messages: [
-            {
-              role: "system",
-              content: `
-Create a clear, neutral and factual consumer-complaint template.
-
-The template should present the user's account in a calm, professional,
-plain-English style. It is a suggested way to organise and express the
-information they supplied.
-
-Use only details provided in the submitted form. If a detail is not supplied,
-do not invent it or state it as fact. Avoid legal analysis, legal arguments,
-legal terminology, legal conclusions, threats, accusations, guarantees, or
-statements about what the company must do.
-
-Do not make claims on the user's behalf. Do not state that a policy, rule,
-right, process, deadline, or outcome applies unless the user has explicitly
-provided it.
-
-Return the response using the exact JSON structure requested in the user
-prompt. Return only one complete JSON object and no Markdown code fences.
-              `.trim()
-            },
-            {
-              role: "user",
-              content: makePrompt(complaintData)
-            }
-          ],
-          response_format: {
-            type: "json_object"
-          },
-          max_tokens: 3000
-        }
-      );
+      result = await generateComplaintWithOpenAI(complaintData, env);
     } catch (error) {
-      console.error("Workers AI invocation failed:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : null,
-        model: "@cf/meta/llama-3.1-8b-instruct-fast"
+      console.error("OpenAI complaint generation failed:", {
+        message: error instanceof Error ? error.message : String(error)
       });
 
       return json(
         {
-          error:
-            "Draft generation is temporarily unavailable. Please try again shortly."
+          error: "Draft generation is temporarily unavailable. Please try again shortly."
         },
         502
       );
     }
 
-   let result;
-
-if (
-  aiResponse &&
-  typeof aiResponse === "object" &&
-  aiResponse.response &&
-  typeof aiResponse.response === "object" &&
-  !Array.isArray(aiResponse.response)
-) {
-  result = aiResponse.response;
-} else {
-  const rawText = removeCodeFences(getTextFromAIResponse(aiResponse));
-  const completeJson = extractCompleteJsonObject(rawText);
-
-  if (!completeJson) {
-    console.error("Workers AI returned no complete JSON object:", {
-      type: typeof aiResponse,
-      keys: aiResponse && typeof aiResponse === "object"
-        ? Object.keys(aiResponse)
-        : [],
-      text: rawText.slice(0, 4000)
-    });
-
-    return json(
-      {
-        error: "The draft could not be completed. Please try again."
-      },
-      502
-    );
-  }
-
-  try {
-    result = JSON.parse(completeJson);
-  } catch (error) {
-    console.error("Workers AI returned invalid JSON:", {
-      message: error instanceof Error ? error.message : String(error),
-      text: completeJson.slice(0, 4000)
-    });
-
-    return json(
-      {
-        error: "The AI returned a draft in an unexpected format. Please try again."
-      },
-      502
-    );
-  }
-}
+    if (!result || typeof result !== "object" || Array.isArray(result)) {
+      console.error("OpenAI returned an unexpected result type:", {
+        type: typeof result
+      });
+      return json(
+        { error: "The AI returned a draft in an unexpected format. Please try again." },
+        502
+      );
+    }
 
     const requiredKeys = [
       "title",
@@ -398,8 +385,7 @@ if (
 
     for (const key of requiredKeys) {
       if (!(key in result)) {
-        console.error("Workers AI response missing key:", { key, result });
-
+        console.error("OpenAI response missing key:", { key });
         return json(
           { error: "The AI response was incomplete. Please try again." },
           502
@@ -436,13 +422,8 @@ if (
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Billing: authentication lookup                                             */
-/* -------------------------------------------------------------------------- */
-
 async function requireAuth(request, env) {
   requireDatabase(env);
-
   const cookies = parseCookies(request.headers.get("cookie") || "");
   const sessionToken = cookies.disputr_session;
 
@@ -462,9 +443,7 @@ async function requireAuth(request, env) {
       AND sessions.expires_at > unixepoch()
     LIMIT 1
     `
-  )
-    .bind(sessionToken)
-    .first();
+  ).bind(sessionToken).first();
 
   return user || null;
 }
@@ -489,9 +468,7 @@ async function getCurrentUserBilling(request, env) {
     ORDER BY updated_at DESC
     LIMIT 1
     `
-  )
-    .bind(user.id)
-    .first();
+  ).bind(user.id).first();
 
   return json({
     authenticated: true,
@@ -500,25 +477,15 @@ async function getCurrentUserBilling(request, env) {
       email: user.email,
       premium: Boolean(user.premium)
     },
-    subscription: subscription
-      ? {
-          status: subscription.status,
-          premium: Boolean(subscription.premium),
-          trial_end: unixSecondsToIso(subscription.trial_end),
-          current_period_end: unixSecondsToIso(
-            subscription.current_period_end
-          ),
-          cancel_at_period_end: Boolean(
-            subscription.cancel_at_period_end
-          )
-        }
-      : null
+    subscription: subscription ? {
+      status: subscription.status,
+      premium: Boolean(subscription.premium),
+      trial_end: unixSecondsToIso(subscription.trial_end),
+      current_period_end: unixSecondsToIso(subscription.current_period_end),
+      cancel_at_period_end: Boolean(subscription.cancel_at_period_end)
+    } : null
   });
 }
-
-/* -------------------------------------------------------------------------- */
-/* Billing: Stripe Checkout                                                   */
-/* -------------------------------------------------------------------------- */
 
 async function createCheckoutSession(request, env) {
   requireDatabase(env);
@@ -547,15 +514,12 @@ async function createCheckoutSession(request, env) {
     ORDER BY updated_at DESC
     LIMIT 1
     `
-  )
-    .bind(user.id)
-    .first();
+  ).bind(user.id).first();
 
   if (existingSubscription) {
     return json(
       {
-        error:
-          "You already have a subscription. Use Manage payment or cancel instead."
+        error: "You already have a subscription. Use Manage payment or cancel instead."
       },
       409
     );
@@ -563,21 +527,13 @@ async function createCheckoutSession(request, env) {
 
   const origin = new URL(request.url).origin;
   const form = new URLSearchParams();
-
   form.set("mode", "subscription");
-  form.set(
-    "success_url",
-    `${origin}/subscription-and-billing.html?checkout=success`
-  );
-  form.set(
-    "cancel_url",
-    `${origin}/pricing.html?checkout=canceled`
-  );
+  form.set("success_url", `${origin}/subscription-and-billing.html?checkout=success`);
+  form.set("cancel_url", `${origin}/pricing.html?checkout=canceled`);
   form.set("line_items[price]", env.STRIPE_PRICE_ID);
   form.set("line_items[quantity]", "1");
 
   const trialDays = Number(env.STRIPE_TRIAL_DAYS || 0);
-
   if (Number.isInteger(trialDays) && trialDays > 0) {
     form.set("subscription_data[trial_period_days]", String(trialDays));
   }
@@ -586,17 +542,14 @@ async function createCheckoutSession(request, env) {
   form.set("metadata[user_id]", user.id);
   form.set("subscription_data[metadata][user_id]", user.id);
 
-  const stripeResponse = await fetch(
-    "https://api.stripe.com/v1/checkout/sessions",
-    {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
-        "content-type": "application/x-www-form-urlencoded"
-      },
-      body: form.toString()
-    }
-  );
+  const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+      "content-type": "application/x-www-form-urlencoded"
+    },
+    body: form.toString()
+  });
 
   const stripeResult = await readStripeJson(stripeResponse);
 
@@ -608,9 +561,7 @@ async function createCheckoutSession(request, env) {
 
     return json(
       {
-        error:
-          stripeResult?.error?.message ||
-          "Stripe rejected the Checkout request."
+        error: stripeResult?.error?.message || "Stripe rejected the Checkout request."
       },
       502
     );
@@ -622,10 +573,6 @@ async function createCheckoutSession(request, env) {
 
   return json({ checkoutUrl: stripeResult.url });
 }
-
-/* -------------------------------------------------------------------------- */
-/* Billing: Stripe Billing Portal                                             */
-/* -------------------------------------------------------------------------- */
 
 async function createPortalSession(request, env) {
   requireDatabase(env);
@@ -649,9 +596,7 @@ async function createPortalSession(request, env) {
     ORDER BY updated_at DESC
     LIMIT 1
     `
-  )
-    .bind(user.id)
-    .first();
+  ).bind(user.id).first();
 
   if (!subscription?.stripe_customer_id) {
     return json(
@@ -662,21 +607,17 @@ async function createPortalSession(request, env) {
 
   const origin = new URL(request.url).origin;
   const form = new URLSearchParams();
-
   form.set("customer", subscription.stripe_customer_id);
   form.set("return_url", `${origin}/subscription-and-billing.html`);
 
-  const stripeResponse = await fetch(
-    "https://api.stripe.com/v1/billing_portal/sessions",
-    {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
-        "content-type": "application/x-www-form-urlencoded"
-      },
-      body: form.toString()
-    }
-  );
+  const stripeResponse = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+      "content-type": "application/x-www-form-urlencoded"
+    },
+    body: form.toString()
+  });
 
   const stripeResult = await readStripeJson(stripeResponse);
 
@@ -688,27 +629,18 @@ async function createPortalSession(request, env) {
 
     return json(
       {
-        error:
-          stripeResult?.error?.message ||
-          "Stripe rejected the Billing Portal request."
+        error: stripeResult?.error?.message || "Stripe rejected the Billing Portal request."
       },
       502
     );
   }
 
   if (!stripeResult?.url) {
-    return json(
-      { error: "Stripe did not return a Billing Portal URL." },
-      502
-    );
+    return json({ error: "Stripe did not return a Billing Portal URL." }, 502);
   }
 
   return json({ url: stripeResult.url });
 }
-
-/* -------------------------------------------------------------------------- */
-/* Billing: Stripe webhooks                                                   */
-/* -------------------------------------------------------------------------- */
 
 async function handleStripeWebhook(request, env) {
   requireDatabase(env);
@@ -718,7 +650,6 @@ async function handleStripeWebhook(request, env) {
   }
 
   const signatureHeader = request.headers.get("stripe-signature");
-
   if (!signatureHeader) {
     return json({ error: "Missing Stripe-Signature header." }, 400);
   }
@@ -735,7 +666,6 @@ async function handleStripeWebhook(request, env) {
   }
 
   let event;
-
   try {
     event = JSON.parse(rawBody);
   } catch {
@@ -757,9 +687,7 @@ async function handleStripeWebhook(request, env) {
     VALUES (?, ?, ?, unixepoch())
     ON CONFLICT(stripe_event_id) DO NOTHING
     `
-  )
-    .bind(event.id, event.type, Number(event.created || 0))
-    .run();
+  ).bind(event.id, event.type, Number(event.created || 0)).run();
 
   if (insertEvent.meta.changes === 0) {
     return json({ received: true, duplicate: true });
@@ -770,10 +698,7 @@ async function handleStripeWebhook(request, env) {
   } catch (error) {
     await env.DB.prepare(
       "DELETE FROM stripe_webhook_events WHERE stripe_event_id = ?"
-    )
-      .bind(event.id)
-      .run();
-
+    ).bind(event.id).run();
     throw error;
   }
 
@@ -787,17 +712,14 @@ async function processStripeEvent(db, event) {
     case "checkout.session.completed":
       await recordCheckoutSession(db, event, object);
       return;
-
     case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted":
       await upsertSubscription(db, event, object);
       return;
-
     case "invoice.payment_failed":
       await recordPaymentFailure(db, event, object);
       return;
-
     default:
       return;
   }
@@ -841,9 +763,7 @@ async function recordCheckoutSession(db, event, session) {
       ),
       updated_at = unixepoch()
     `
-  )
-    .bind(subscriptionId, customerId, userId, Number(event.created || 0))
-    .run();
+  ).bind(subscriptionId, customerId, userId, Number(event.created || 0)).run();
 }
 
 async function upsertSubscription(db, event, subscription) {
@@ -854,11 +774,9 @@ async function upsertSubscription(db, event, subscription) {
     throw new Error("Stripe subscription event has no subscription ID.");
   }
 
-  const status =
-    event.type === "customer.subscription.deleted"
-      ? "canceled"
-      : cleanText(subscription.status, 50) || "incomplete";
-
+  const status = event.type === "customer.subscription.deleted"
+    ? "canceled"
+    : cleanText(subscription.status, 50) || "incomplete";
   const premium = isPremiumStatus(status) ? 1 : 0;
   const userId = getInternalUserId(subscription);
   const eventCreated = Number(event.created || 0);
@@ -916,26 +834,23 @@ async function upsertSubscription(db, event, subscription) {
       ),
       updated_at = unixepoch()
     `
-  )
-    .bind(
-      subscriptionId,
-      customerId,
-      userId,
-      status,
-      premium,
-      Number(subscription.current_period_end || 0) || null,
-      Number(subscription.trial_end || 0) || null,
-      subscription.cancel_at_period_end ? 1 : 0,
-      eventCreated
-    )
-    .run();
+  ).bind(
+    subscriptionId,
+    customerId,
+    userId,
+    status,
+    premium,
+    Number(subscription.current_period_end || 0) || null,
+    Number(subscription.trial_end || 0) || null,
+    subscription.cancel_at_period_end ? 1 : 0,
+    eventCreated
+  ).run();
 
   await syncPremiumStatus(db, subscriptionId);
 }
 
 async function recordPaymentFailure(db, event, invoice) {
   const subscriptionId = stripeId(invoice.subscription);
-
   if (!subscriptionId) {
     return;
   }
@@ -961,9 +876,7 @@ async function recordPaymentFailure(db, event, invoice) {
       updated_at = unixepoch()
     WHERE stripe_subscription_id = ?
     `
-  )
-    .bind(eventCreated, eventCreated, eventCreated, subscriptionId)
-    .run();
+  ).bind(eventCreated, eventCreated, eventCreated, subscriptionId).run();
 
   await syncPremiumStatus(db, subscriptionId);
 }
@@ -976,9 +889,7 @@ async function syncPremiumStatus(db, subscriptionId) {
     WHERE stripe_subscription_id = ?
     LIMIT 1
     `
-  )
-    .bind(subscriptionId)
-    .first();
+  ).bind(subscriptionId).first();
 
   if (!subscription?.user_id) {
     return;
@@ -992,14 +903,8 @@ async function syncPremiumStatus(db, subscriptionId) {
       updated_at = unixepoch()
     WHERE id = ?
     `
-  )
-    .bind(subscription.premium, subscription.user_id)
-    .run();
+  ).bind(subscription.premium, subscription.user_id).run();
 }
-
-/* -------------------------------------------------------------------------- */
-/* Stripe HMAC signature verification                                         */
-/* -------------------------------------------------------------------------- */
 
 async function verifyStripeSignature(rawBody, signatureHeader, secret) {
   const parsed = parseStripeSignatureHeader(signatureHeader);
@@ -1009,13 +914,11 @@ async function verifyStripeSignature(rawBody, signatureHeader, secret) {
   }
 
   const now = Math.floor(Date.now() / 1000);
-
   if (Math.abs(now - parsed.timestamp) > WEBHOOK_TOLERANCE_SECONDS) {
     return false;
   }
 
   const signedPayload = `${parsed.timestamp}.${rawBody}`;
-
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -1046,7 +949,6 @@ function parseStripeSignatureHeader(header) {
 
   for (const item of header.split(",")) {
     const separator = item.indexOf("=");
-
     if (separator < 1) {
       continue;
     }
@@ -1063,10 +965,7 @@ function parseStripeSignatureHeader(header) {
     }
   }
 
-  return {
-    timestamp,
-    v1Signatures
-  };
+  return { timestamp, v1Signatures };
 }
 
 function timingSafeEqualHex(left, right) {
@@ -1079,17 +978,12 @@ function timingSafeEqualHex(left, right) {
   }
 
   let difference = 0;
-
   for (let index = 0; index < left.length; index += 1) {
     difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
   }
 
   return difference === 0;
 }
-
-/* -------------------------------------------------------------------------- */
-/* Utility functions                                                          */
-/* -------------------------------------------------------------------------- */
 
 function requireDatabase(env) {
   if (!env.DB) {
@@ -1104,7 +998,6 @@ function parseCookies(cookieHeader) {
 
   for (const part of cookieHeader.split(";")) {
     const separator = part.indexOf("=");
-
     if (separator < 1) {
       continue;
     }
@@ -1126,7 +1019,6 @@ function parseCookies(cookieHeader) {
 
 function getInternalUserId(object) {
   const value = object?.metadata?.user_id || object?.client_reference_id || null;
-
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
