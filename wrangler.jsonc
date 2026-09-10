@@ -2,16 +2,29 @@
   "name": "disputr-website",
   "main": "worker.js",
   "compatibility_date": "2026-09-08",
+  "account_id": "f0e0d48dbc4fadb2c382c62635067e46",
 
   "assets": {
-    "directory": ".",
+    "directory": "./public",
     "binding": "ASSETS",
     "run_worker_first": [
       "/api/*"
     ]
   },
 
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "disputr-db",
+      "database_id": "73534e26-aa23-4c93-8cf1-531f76817ddb"
+    }
+  ],
+
   "ai": {
     "binding": "AI"
+  },
+
+  "observability": {
+    "enabled": true
   }
 }
