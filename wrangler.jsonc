@@ -26,5 +26,24 @@
 
   "observability": {
     "enabled": true
+  },
+
+  "env": {
+    "staging": {
+      "name": "disputr-website-staging",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "disputr-db-staging",
+          "database_id": "172060fe-c6b8-4eec-864c-5852854e3c1c"
+        }
+      ],
+      "ai": {
+        "binding": "AI"
+      },
+      "observability": {
+        "enabled": true
+      }
+    }
   }
 }
