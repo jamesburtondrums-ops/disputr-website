@@ -38,6 +38,12 @@
           "database_id": "172060fe-c6b8-4eec-864c-5852854e3c1c"
         }
       ],
+      "r2_buckets": [
+        {
+          "binding": "EVIDENCE_BUCKET",
+          "bucket_name": "disputr-evidence-staging"
+        }
+      ],
       "ai": {
         "binding": "AI"
       },
