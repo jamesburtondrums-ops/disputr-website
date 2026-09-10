@@ -4,7 +4,7 @@ const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{...(opts.body instanceof FormData?{}:{'content-type':'application/json'}),...(opts.headers||{})}});const p=await r.json().catch(()=>({}));if(!r.ok){const err=new Error(p.error||'Something went wrong.');err.status=r.status;throw err}return p}
 function msg(t,bad=false){const e=$('#msg');if(e)e.innerHTML=`<div class="notice ${bad?'error':''}">${esc(t)}</div>`}
 function formJSON(f){return Object.fromEntries(new FormData(f))}
-function safeNext(){const n=new URLSearchParams(location.search).get('next');return n&&n.startsWith('/')&&!n.startsWith('//')?n:'/'}
+function safeNext(){const n=new URLSearchParams(location.search).get('next');if(!n)return'/';try{const u=new URL(n,location.origin);return u.origin===location.origin&&n.startsWith('/')&&!n.startsWith('//')?u.pathname+u.search+u.hash:'/'}catch{return'/'}}
 function loginUrl(next='/'){return `/login.html?next=${encodeURIComponent(next)}`}
 let sessionCache;
 async function session(force=false){if(!force&&sessionCache!==undefined)return sessionCache;try{const me=await api('/api/me');sessionCache=me.authenticated?me:false}catch{sessionCache=false}return sessionCache}
@@ -17,10 +17,12 @@ const showLogin=$('#showLogin'),showRegister=$('#showRegister'),loginPane=$('#lo
 showLogin?.addEventListener('click',()=>{loginPane.hidden=false;registerPane.hidden=true;showLogin.classList.add('active');showRegister.classList.remove('active')});
 showRegister?.addEventListener('click',()=>{loginPane.hidden=true;registerPane.hidden=false;showRegister.classList.add('active');showLogin.classList.remove('active')});
 
-async function applyAuthUI(){const me=await session();$$('[data-account-link]').forEach(a=>{a.textContent=me?'My Disputr':'Sign in';a.href=me?'/dashboard.html':loginUrl(location.pathname+location.search)});$$('[data-start-complaint]').forEach(a=>{const category=a.dataset.category||'';const dest=`/dashboard.html?new=1${category?'&category='+encodeURIComponent(category):''}`;a.href=me?dest:loginUrl(dest)});if($('#mainCta'))$('#mainCta').textContent=me?'Start complaint':'Get started';if($('#billing')&&me?.subscription&&['active','trialing'].includes(me.subscription.status))$('#billing').textContent='Manage Premium';if(document.body.dataset.page==='login'&&me)location.replace(safeNext())}
+async function applyAuthUI(){const me=await session();$$('[data-account-link]').forEach(a=>{a.textContent=me?'My Disputr':'Sign in';a.href=me?'/dashboard.html':loginUrl(location.pathname+location.search)});$$('[data-start-complaint]').forEach(a=>{const category=a.dataset.category||'';const dest=`/dashboard.html?new=1${category?'&category='+encodeURIComponent(category):''}`;a.href=me?dest:loginUrl(dest)});if($('#mainCta'))$('#mainCta').textContent=me?'Start complaint':'Get started';if($('#billing')&&me?.subscription&&['active','trialing'].includes(me.subscription.status))$('#billing').textContent='Manage Premium';if($('#supportForm')&&me?.user?.email&&!$('#supportForm').email.value)$('#supportForm').email.value=me.user.email;if(document.body.dataset.page==='login'&&me)location.replace(safeNext())}
 applyAuthUI();
 
 $('#billing')?.addEventListener('click',async()=>{try{const me=await session(true);if(!me){location.replace(loginUrl('/pricing.html'));return}if(me.subscription&&['active','trialing'].includes(me.subscription.status)){const p=await api('/api/billing/create-portal-session',{method:'POST',body:'{}'});location=p.url;return}const p=await api('/api/billing/create-checkout-session',{method:'POST',body:'{}'});location=p.url}catch(x){msg(x.message,true)}});
+
+$('#supportForm')?.addEventListener('submit',async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;try{const p=await api('/api/support',{method:'POST',body:JSON.stringify(formJSON(e.target))});msg(`Support request sent. Your reference is ${p.ticket_ref}.`);e.target.reset()}catch(x){msg(x.message,true)}finally{button.disabled=false}});
 
 function toggleCase(show=true){const p=$('#newCasePanel');if(!p)return;p.hidden=!show;if(show)p.scrollIntoView({behavior:'smooth',block:'start'})}
 $('#startCase')?.addEventListener('click',()=>toggleCase(true));$('#startCase2')?.addEventListener('click',()=>toggleCase(true));$('#closeCase')?.addEventListener('click',()=>toggleCase(false));
