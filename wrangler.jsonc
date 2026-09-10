@@ -24,6 +24,13 @@
     "binding": "AI"
   },
 
+  "vars": {
+    "STRIPE_TRIAL_DAYS": "14",
+    "AI_GUEST_DAILY_LIMIT": "1",
+    "AI_FREE_DAILY_LIMIT": "3",
+    "AI_PREMIUM_DAILY_LIMIT": "40"
+  },
+
   "observability": {
     "enabled": true
   },
@@ -46,6 +53,12 @@
       ],
       "ai": {
         "binding": "AI"
+      },
+      "vars": {
+        "STRIPE_TRIAL_DAYS": "14",
+        "AI_GUEST_DAILY_LIMIT": "1",
+        "AI_FREE_DAILY_LIMIT": "3",
+        "AI_PREMIUM_DAILY_LIMIT": "40"
       },
       "observability": {
         "enabled": true
