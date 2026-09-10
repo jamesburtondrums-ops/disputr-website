@@ -55,6 +55,7 @@
         "binding": "AI"
       },
       "vars": {
+        "STRIPE_PRICE_ID": "price_1UEBDDL3nV61fL1Qapla3eUv",
         "STRIPE_TRIAL_DAYS": "14",
         "AI_GUEST_DAILY_LIMIT": "1",
         "AI_FREE_DAILY_LIMIT": "3",
