@@ -1,27 +1,32 @@
-# Disputr V2
+# Disputr V3
 
-This branch contains the staging/production candidate for the Disputr complaint-management service.
+This branch contains the current V3 staging/production candidate for the Disputr complaint-management service.
 
 ## Runtime
 
-Cloudflare Workers serves the application. `wrangler.jsonc` points to `worker-v3.js`, which is the current API/runtime entrypoint on this branch.
+Cloudflare Workers serves the application. `wrangler.jsonc` points to `worker-v3.js`, the current API/runtime entrypoint. The deployed static site is **only** the `public/` directory. Older root-level HTML/JavaScript is legacy source and is not served by V3.
 
-The deployed static site is **only** the `public/` directory. Older HTML and JavaScript files that still exist at repository root are legacy material and are not part of the current deployed V2 site.
+## Customer journey
 
-## Current customer journey
+1. Public homepage, How it works, pricing and complaint guides remain accessible whether signed in or not.
+2. Signing in directly lands on **My Disputr** (`/dashboard.html`). If sign-in was required for a specific safe same-origin destination, the user returns to that destination.
+3. Signed-in navigation to public pages does not end the session. The header changes to **My Disputr** and complaint CTAs route back into the authenticated dashboard.
+4. Browser Back/Forward navigation does not sign the user out. Restored pages refresh their authentication UI from `/api/me`.
+5. The only customer action that destroys the session is the explicit **Sign out** control.
+6. My Disputr lists cases and reminders. A case stores complaint details, generated draft wording, evidence, timeline events and reminders.
+7. Premium checkout uses Stripe and includes the configured free trial. Stripe webhooks update Premium entitlement state.
 
-1. Public homepage and free complaint guides.
-2. Sign in or create an account when the user wants to save/manage a case.
-3. My Disputr dashboard lists cases and reminders.
-4. A case can store complaint details, generated draft wording, evidence, timeline events and reminders.
-5. Premium checkout uses Stripe and includes the configured free trial.
-6. Stripe webhooks update Premium status.
+## Navigation invariants
 
-## API
+- The Disputr wordmark always provides a predictable route to the public homepage.
+- Public navigation never redirects an authenticated user to login.
+- Protected pages redirect to login only when the API positively reports that authentication is required; transient API failures are shown as errors rather than treated as logout.
+- Login `next` destinations are restricted to safe same-origin paths and cannot point back to the login page, preventing redirect loops.
+- No customer navigation intentionally opens duplicate browser tabs/windows.
 
-Current routes include authentication, `/api/me`, complaint drafting, complaint CRUD, timeline events, evidence upload/download/delete, reminders, support, Stripe checkout/portal and Stripe webhooks.
+## API and storage
 
-## Storage and services
+Routes cover authentication, `/api/me`, complaint drafting, complaint CRUD, timeline events, evidence upload/download/delete, reminders, support, Stripe checkout/portal and Stripe webhooks.
 
 - D1: users, sessions, complaints, case events, evidence metadata, reminders, support, AI usage and subscription state.
 - R2: private evidence objects.
@@ -30,12 +35,12 @@ Current routes include authentication, `/api/me`, complaint drafting, complaint 
 
 ## Authentication
 
-Passwords are stored as PBKDF2-SHA256 hashes using the maximum 100,000 iterations supported by the current Cloudflare Workers Web Crypto implementation. Session tokens are random 32-byte hexadecimal values; only their SHA-256 hashes are stored in D1. Session cookies are Secure, HttpOnly and SameSite=Lax.
+Passwords are stored as PBKDF2-SHA256 hashes using 100,000 iterations for compatibility with the current deployed account format. Session tokens are random 32-byte hexadecimal values; only SHA-256 token hashes are stored in D1. Session cookies are Secure, HttpOnly and SameSite=Lax with a 30-day lifetime.
 
 ## Environments
 
-The `staging` Wrangler environment uses the staging D1 database and staging evidence R2 bucket. Production must not be promoted from this branch until production R2 and live Stripe configuration are explicitly completed and the staging journey has been tested end to end.
+The `staging` Wrangler environment uses the staging D1 database and staging evidence R2 bucket. Production must not be promoted until the V3 staging journey has passed end-to-end testing and production R2/live Stripe configuration are explicitly ready.
 
 ## Migrations
 
-D1 schema files live in `migrations/`. Existing staging schema was provisioned separately, so adding a migration file does not by itself mean it has been applied to the live staging database.
+D1 schema files live in `migrations/`. Adding a migration file does not itself mean it has been applied to a deployed D1 database.
