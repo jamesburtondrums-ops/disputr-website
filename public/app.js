@@ -7,7 +7,8 @@ function formJSON(f){return Object.fromEntries(new FormData(f))}
 function safeLocalPath(value,fallback='/dashboard.html'){if(!value||typeof value!=='string'||!value.startsWith('/')||value.startsWith('//'))return fallback;try{const u=new URL(value,location.origin);if(u.origin!==location.origin||u.pathname==='/login.html')return fallback;return u.pathname+u.search+u.hash}catch{return fallback}}
 function safeNext(fallback='/dashboard.html'){return safeLocalPath(new URLSearchParams(location.search).get('next'),fallback)}
 function loginUrl(next='/dashboard.html'){return `/login.html?next=${encodeURIComponent(safeLocalPath(next))}`}
-function cleanDashboardQuery(){if(location.pathname!=='/dashboard.html')return;const q=new URLSearchParams(location.search);if(q.has('new')||q.has('category')){q.delete('new');q.delete('category');const s=q.toString();history.replaceState(null,'',location.pathname+(s?'?'+s:'')+location.hash)}}
+function replaceQuery(remove=[]){const q=new URLSearchParams(location.search);remove.forEach(k=>q.delete(k));const s=q.toString();history.replaceState(null,'',location.pathname+(s?'?'+s:'')+location.hash)}
+function cleanDashboardQuery(){if(location.pathname==='/dashboard.html')replaceQuery(['new','category'])}
 let sessionCache;
 async function session(force=false){if(!force&&sessionCache!==undefined)return sessionCache;try{const me=await api('/api/me');sessionCache=me.authenticated?me:false;return sessionCache}catch(err){if(err.status===401){sessionCache=false;return false}throw err}}
 
@@ -19,9 +20,13 @@ const showLogin=$('#showLogin'),showRegister=$('#showRegister'),loginPane=$('#lo
 showLogin?.addEventListener('click',()=>{loginPane.hidden=false;registerPane.hidden=true;showLogin.classList.add('active');showRegister.classList.remove('active')});
 showRegister?.addEventListener('click',()=>{loginPane.hidden=true;registerPane.hidden=false;showRegister.classList.add('active');showLogin.classList.remove('active')});
 
-async function applyAuthUI(){const me=await session();$$('[data-account-link]').forEach(a=>{a.textContent=me?'My Disputr':'Sign in';a.href=me?'/dashboard.html':loginUrl('/dashboard.html')});$$('[data-start-complaint]').forEach(a=>{const category=a.dataset.category||'';const dest=`/dashboard.html?new=1${category?'&category='+encodeURIComponent(category):''}`;a.href=me?dest:loginUrl(dest)});if($('#mainCta'))$('#mainCta').textContent=me?'Start complaint':'Get started';if($('#billing')&&me?.subscription&&['active','trialing'].includes(me.subscription.status))$('#billing').textContent='Manage Premium';if($('#supportForm')&&me?.user?.email&&!$('#supportForm').email.value)$('#supportForm').email.value=me.user.email;if(document.body.dataset.page==='login'&&me)location.replace(safeNext())}
+async function applyAuthUI(){const me=await session();$$('[data-account-link]').forEach(a=>{a.textContent=me?'My Disputr':'Sign in';a.href=me?'/dashboard.html':loginUrl('/dashboard.html')});$$('[data-start-complaint]').forEach(a=>{const category=a.dataset.category||'';const dest=`/dashboard.html?new=1${category?'&category='+encodeURIComponent(category):''}`;a.href=me?dest:loginUrl(dest)});if($('#mainCta'))$('#mainCta').textContent=me?'Start complaint':'Get started';if($('#billing'))$('#billing').textContent=me?.subscription&&['active','trialing'].includes(me.subscription.status)?'Manage Premium':($('#billing').dataset.defaultLabel||$('#billing').textContent);if($('#supportForm')&&me?.user?.email&&!$('#supportForm').email.value)$('#supportForm').email.value=me.user.email;if(document.body.dataset.page==='login'&&me)location.replace(safeNext())}
+if($('#billing'))$('#billing').dataset.defaultLabel=$('#billing').textContent;
 applyAuthUI().catch(()=>{});
 window.addEventListener('pageshow',e=>{if(e.persisted){sessionCache=undefined;applyAuthUI().catch(()=>{});dashboard()}});
+
+const billingReturn=new URLSearchParams(location.search).get('billing');
+if(billingReturn==='success'){msg('Your billing setup completed. Premium can take a few seconds to appear while Stripe confirms the subscription.');replaceQuery(['billing']);setTimeout(()=>{sessionCache=undefined;applyAuthUI().catch(()=>{})},1500)}else if(billingReturn==='cancelled'){msg('Checkout was cancelled. No subscription changes were made.');replaceQuery(['billing'])}
 
 $('#billing')?.addEventListener('click',async e=>{const button=e.currentTarget;button.disabled=true;try{const me=await session(true);if(!me){location.replace(loginUrl('/pricing.html'));return}if(me.subscription&&['active','trialing'].includes(me.subscription.status)){const p=await api('/api/billing/create-portal-session',{method:'POST',body:'{}'});location.assign(p.url);return}const p=await api('/api/billing/create-checkout-session',{method:'POST',body:'{}'});location.assign(p.url)}catch(x){button.disabled=false;msg(x.message,true)}});
 
