@@ -1,17 +1,21 @@
 {
   "name": "disputr-website",
-  "main": "worker.js",
+  "main": "worker-v3.js",
   "compatibility_date": "2026-09-08",
-
-  "assets": {
-    "directory": ".",
-    "binding": "ASSETS",
-    "run_worker_first": [
-      "/api/*"
-    ]
-  },
-
-  "ai": {
-    "binding": "AI"
+  "account_id": "f0e0d48dbc4fadb2c382c62635067e46",
+  "assets": {"directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"]},
+  "d1_databases": [{"binding": "DB", "database_name": "disputr-db", "database_id": "73534e26-aa23-4c93-8cf1-531f76817ddb"}],
+  "ai": {"binding": "AI"},
+  "vars": {"STRIPE_TRIAL_DAYS":"14","AI_GUEST_DAILY_LIMIT":"1","AI_FREE_DAILY_LIMIT":"3","AI_PREMIUM_DAILY_LIMIT":"40","OPENAI_MODEL":"gpt-5.6-luna"},
+  "observability": {"enabled": true},
+  "env": {
+    "staging": {
+      "name": "disputr-website-staging",
+      "d1_databases": [{"binding":"DB","database_name":"disputr-db-staging","database_id":"172060fe-c6b8-4eec-864c-5852854e3c1c"}],
+      "r2_buckets": [{"binding":"EVIDENCE_BUCKET","bucket_name":"disputr-evidence-staging"}],
+      "ai": {"binding":"AI"},
+      "vars": {"STRIPE_PRICE_ID":"price_1UEBDDL3nV61fL1Qapla3eUv","STRIPE_TRIAL_DAYS":"14","AI_GUEST_DAILY_LIMIT":"1","AI_FREE_DAILY_LIMIT":"3","AI_PREMIUM_DAILY_LIMIT":"40","OPENAI_MODEL":"gpt-5.6-luna"},
+      "observability": {"enabled": true}
+    }
   }
 }
