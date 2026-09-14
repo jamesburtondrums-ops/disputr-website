@@ -81,7 +81,7 @@ async function generateComplaint(request, env) {
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: env.OPENAI_MODEL || 'gpt-5.6-luna',
+        model: env.OPENAI_MODEL || 'gpt-5-mini',
         store: false,
         input: [
           {
@@ -104,17 +104,22 @@ async function generateComplaint(request, env) {
 
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      console.error('Draft generation API failure', response.status, payload?.error?.code || payload?.error?.type || 'unknown');
-      return json({ error: 'Draft generation is temporarily unavailable. Please try again shortly.' }, 502);
+      const upstream = new Error(payload?.error?.message || `OpenAI request failed with HTTP ${response.status}.`);
+      upstream.name = payload?.error?.type || payload?.error?.code || 'OpenAIError';
+      throw upstream;
     }
 
     const text = outputText(payload);
-    if (!text) return json({ error: 'The AI returned no usable draft. Please try again.' }, 502);
+    if (!text) throw new Error('OpenAI returned no usable draft.');
 
     const result = JSON.parse(text);
     return json({ ...result, disclaimer: DISCLAIMER });
   } catch (error) {
-    console.error('Draft generation failure', error instanceof Error ? error.message : String(error));
+    console.error('OpenAI complaint generation failed:', {
+      name: error instanceof Error ? error.name : 'UnknownError',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : null
+    });
     return json({ error: 'Draft generation is temporarily unavailable. Please try again shortly.' }, 502);
   }
 }
