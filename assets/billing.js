@@ -2,10 +2,11 @@
   const startButtons = [...document.querySelectorAll('[data-start-trial]')];
   const message = document.querySelector('[data-billing-message]');
   const billingCard = document.querySelector('[data-billing-card]');
+  let stripeReady = false;
 
   function setStartBusy(busy) {
     startButtons.forEach((button) => {
-      button.disabled = busy;
+      button.disabled = busy || !stripeReady;
       button.setAttribute('aria-busy', String(busy));
     });
     if (billingCard) {
@@ -20,7 +21,36 @@
     return response.json().catch(() => ({}));
   }
 
+  async function checkBillingHealth() {
+    if (!startButtons.length) return;
+    startButtons.forEach((button) => { button.disabled = true; });
+    try {
+      const response = await fetch('/api/health', {
+        credentials: 'same-origin',
+        headers: { accept: 'application/json' }
+      });
+      const data = await readJson(response);
+      stripeReady = Boolean(
+        response.ok &&
+        data.stripe_checkout_configured &&
+        data.stripe_webhook_configured
+      );
+      startButtons.forEach((button) => { button.disabled = !stripeReady; });
+      if (!stripeReady && message) {
+        message.textContent = 'Premium checkout is temporarily unavailable while billing setup is completed.';
+      }
+    } catch {
+      stripeReady = false;
+      if (message) message.textContent = 'Premium checkout is temporarily unavailable. Please try again later.';
+    }
+  }
+
   async function startTrial() {
+    if (!stripeReady) {
+      if (message) message.textContent = 'Premium checkout is temporarily unavailable while billing setup is completed.';
+      return;
+    }
+
     if (message) message.textContent = 'Preparing secure checkout…';
     setStartBusy(true);
 
@@ -38,9 +68,7 @@
         return;
       }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Unable to start checkout.');
-      }
+      if (!response.ok) throw new Error(data.error || 'Unable to start checkout.');
 
       const checkoutUrl = data.checkoutUrl || data.url;
       if (!checkoutUrl || !/^https:\/\//i.test(checkoutUrl)) {
@@ -80,8 +108,8 @@
       if (!sub) {
         billingCard.innerHTML = `
           <h2>No active subscription</h2>
-          <p>You have not started a Premium trial or subscription.</p>
-          <a class="btn" href="pricing.html">Start 14-day free trial</a>
+          <p>You do not currently have an active Premium subscription.</p>
+          <p><a href="pricing.html">View Premium plan details</a></p>
         `;
         return;
       }
@@ -131,5 +159,6 @@
     }
   }
 
+  checkBillingHealth();
   loadBillingCard();
 })();
