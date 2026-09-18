@@ -1,14 +1,14 @@
 {
   "name": "disputr-website",
-  "main": "worker-fixed.js",
-  "compatibility_date": "2026-09-08",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-18",
 
   "assets": {
-    "directory": ".",
+    "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": [
-      "/api/*"
-    ]
+    "run_worker_first": true,
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page"
   },
 
   "d1_databases": [
@@ -24,6 +24,19 @@
   },
 
   "vars": {
+    "CF_AI_MODEL": "@cf/openai/gpt-oss-120b",
     "OPENAI_MODEL": "gpt-5-mini"
+  },
+
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1
+    }
   }
 }
