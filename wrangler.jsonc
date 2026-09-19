@@ -25,7 +25,8 @@
 
   "vars": {
     "CF_AI_MODEL": "@cf/openai/gpt-oss-120b",
-    "OPENAI_MODEL": "gpt-5-mini"
+    "OPENAI_MODEL": "gpt-5-mini",
+    "STRIPE_PRICE_ID": "price_1UEBDDL3nV61fL1Qapla3eUv"
   },
 
   "observability": {

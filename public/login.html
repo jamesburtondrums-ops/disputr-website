@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Sign in to Disputr or create your secure account.">
+  <title>Sign in or create an account | Disputr</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <header class="site-header"><div class="wrap header-row"><a class="brand" href="index.html"><span class="brand-mark">D</span><span>Disputr</span></a><a class="quiet-link" href="complaint-hub.html">Continue without an account</a></div></header>
+  <main class="auth-layout">
+    <section class="auth-intro"><span class="eyebrow dark">Your complaint workspace</span><h1>Keep the paperwork. Lose the stress.</h1><p>Create a free account to move smoothly between drafting a complaint and managing Premium.</p><ul class="tick-list"><li>Secure account access</li><li>Clear subscription status</li><li>Easy billing management through Stripe</li></ul></section>
+    <section class="auth-cards" aria-label="Account access">
+      <article class="form-card auth-card"><span class="status-pill">Welcome back</span><h2>Sign in</h2><form data-auth-form="login"><label>Email address<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="btn wide" type="submit">Sign in securely</button><p class="form-message" data-auth-message role="status"></p></form></article>
+      <article class="form-card auth-card accent-card"><span class="status-pill success">New to Disputr?</span><h2>Create an account</h2><form data-auth-form="register"><label>Email address<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="new-password" minlength="10" required><span class="field-help">At least 10 characters.</span></label><label>Confirm password<input name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required></label><button class="btn wide" type="submit">Create my account</button><p class="form-message" data-auth-message role="status"></p></form></article>
+      <p class="auth-legal">By creating an account, you agree to the <a href="terms.html">terms</a> and acknowledge the <a href="privacy.html">privacy notice</a>.</p>
+    </section>
+  </main>
+  <script src="assets/auth.js"></script>
+</body></html>

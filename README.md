@@ -1,11 +1,26 @@
-# Disputr AI complaint builder pages
+# Disputr
 
-Upload these three files to the root of `jamesburtondrums-ops/disputr-website`, replacing the existing versions:
+Disputr is a Cloudflare Worker and static web app for preparing UK consumer complaint drafts, finding official company complaint routes and managing a Premium subscription.
 
-- finance-complaint-builder.html
-- travel-complaint-builder.html
-- home-utilities-complaint-builder.html
+## Runtime
 
-These pages make POST requests to `/api/generate-complaint`. They require your Cloudflare Worker to be deployed with the AI binding and the `worker.js` API code already in place.
+- Cloudflare Worker with static assets
+- D1 database for accounts, sessions, support messages and subscription state
+- Workers AI with an OpenAI fallback for draft generation
+- Stripe Checkout, Billing Portal and signed webhooks for Premium
 
-They also require `assets/styles.css` to remain in the repository.
+## Billing configuration
+
+The repository contains no secret values. Configure these as encrypted Worker secrets:
+
+- `STRIPE_SECRET_KEY` — preferably a restricted key with only the required Checkout, Customer, Subscription and Billing Portal permissions
+- `STRIPE_WEBHOOK_SECRET` — signing secret for `https://disputr.uk/api/billing/webhook`
+
+`STRIPE_PRICE_ID` is a non-secret Worker variable. The checked-in value belongs to the connected DisputrUK sandbox and must be replaced with the live £5 monthly Price ID before live-mode launch.
+
+## Checks
+
+```bash
+node tests/smoke.mjs
+npx wrangler deploy --dry-run
+```

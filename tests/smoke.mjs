@@ -35,7 +35,13 @@ const aiResult = {
 {
   const response = await worker.fetch(request("/api/health"), { ASSETS: assets });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { ok: true, service: "disputr" });
+  assert.deepEqual(await response.json(), {
+    ok: true,
+    service: "disputr",
+    accounts_configured: false,
+    stripe_checkout_configured: false,
+    stripe_webhook_configured: false
+  });
 }
 
 {
