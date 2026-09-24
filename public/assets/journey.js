@@ -28,7 +28,7 @@
           <div><strong>If it stalls</strong><span>Check the provider’s stated response time and escalation route.</span></div>
         </div>
         <div class="premium-nudge">
-          <div><strong>Premium can organise this for you</strong><p>Save the case, keep evidence together and track follow-up dates in one guided workspace.</p></div>
+          <div><strong>Premium can organise this for you</strong><p>Save the case, track whether it is drafted or sent, and return to guided next steps in one secure workspace.</p></div>
           <div class="journey-actions"><button class="button" type="button" data-save-case>Save this case</button><a class="button secondary" href="checkout.html">View Premium</a></div>
         </div>
         <p class="form-message" data-save-message role="status"></p>
